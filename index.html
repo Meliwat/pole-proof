@@ -1307,6 +1307,94 @@
       line-height: 1.35;
     }
 
+    .mobile-report-panel {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .mobile-report-head {
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 10px;
+    }
+
+    .mobile-report-head h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .mobile-report-head p,
+    .mobile-report-empty {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .mobile-report-head select {
+      min-width: 126px;
+      min-height: 34px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--panel-2);
+      color: var(--ink);
+      font-weight: 750;
+    }
+
+    .mobile-report-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mobile-report-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel-2);
+    }
+
+    .mobile-report-row strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .mobile-report-row span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .report-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .report-actions button {
+      min-height: 30px;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--ink);
+      background: var(--panel);
+      font-size: 11px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
     @media (max-width: 760px) {
       .public-source-links {
         grid-template-columns: 1fr;
@@ -2775,6 +2863,19 @@
       border-color: #303642;
     }
 
+    .mobile-report-panel,
+    .mobile-report-row {
+      border-color: rgba(255, 255, 255, 0.12);
+      background: #111318;
+    }
+
+    .mobile-report-head select,
+    .report-actions button {
+      color: #f4f4f4;
+      background: #1b1f27;
+      border-color: #303642;
+    }
+
     .command-head {
       border-bottom-color: rgba(255, 255, 255, 0.10);
       background: #111318;
@@ -3086,6 +3187,20 @@
             <span class="search-status" id="searchStatus">Search a Michigan county or city to focus the map and receipt.</span>
             <div class="field-meta" id="fieldMeta"></div>
             <div class="scenario-card" id="stormScenario" aria-live="polite"></div>
+            <section class="mobile-report-panel" aria-label="Resident app report intake">
+              <div class="mobile-report-head">
+                <div>
+                  <h3>Resident app intake</h3>
+                  <p id="mobileReportSummary">Reports submitted from the iOS app appear here for DTE review.</p>
+                </div>
+                <select id="mobileReportSort" aria-label="Sort resident app reports">
+                  <option value="risk">Sort by risk</option>
+                  <option value="newest">Sort by newest</option>
+                  <option value="status">Sort by status</option>
+                </select>
+              </div>
+              <div class="mobile-report-list" id="mobileReportRows"></div>
+            </section>
           </div>
           <div class="field-tools">
             <div class="legend">
@@ -3466,6 +3581,9 @@
         searchStatus: "Search a Michigan county or city to focus the map and receipt.",
         selectedId: null
       };
+      var MOBILE_REPORTS_KEY = "poleproof.mobileReports.v1";
+      var mobileReports = [];
+      var mobileReportSort = "risk";
 
       if (!SCREENS.some(function (screen) { return screen.id === state.screen; })) {
         state.screen = "work";
@@ -3518,6 +3636,9 @@
         cycleSummary: document.getElementById("cycleSummary"),
         fieldMeta: document.getElementById("fieldMeta"),
         stormScenario: document.getElementById("stormScenario"),
+        mobileReportSummary: document.getElementById("mobileReportSummary"),
+        mobileReportSort: document.getElementById("mobileReportSort"),
+        mobileReportRows: document.getElementById("mobileReportRows"),
         receiptStatus: document.getElementById("receiptStatus"),
         receiptShell: document.getElementById("receiptShell"),
         exportCsv: document.getElementById("exportCsv"),
@@ -4430,6 +4551,102 @@
         els.sourceOverlay.hidden = true;
       }
 
+      function loadMobileReports() {
+        try {
+          mobileReports = JSON.parse(localStorage.getItem(MOBILE_REPORTS_KEY) || "[]");
+        } catch (e) {
+          mobileReports = [];
+        }
+      }
+
+      function saveMobileReports() {
+        localStorage.setItem(MOBILE_REPORTS_KEY, JSON.stringify(mobileReports));
+      }
+
+      function decodeBase64Url(value) {
+        var normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+        while (normalized.length % 4) normalized += "=";
+        var binary = atob(normalized);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return new TextDecoder().decode(bytes);
+      }
+
+      function normalizeMobileReport(payload) {
+        return {
+          id: String(payload.id || "MOBILE-" + Date.now()),
+          createdAt: String(payload.createdAt || new Date().toISOString()),
+          guestName: String(payload.guestName || "Guest resident"),
+          category: String(payload.category || "Other"),
+          severity: String(payload.severity || "Elevated"),
+          status: String(payload.status || "Submitted"),
+          latitude: Number(payload.latitude || 42.3314),
+          longitude: Number(payload.longitude || -83.0458),
+          addressHint: String(payload.addressHint || "Wayne County"),
+          residentNote: String(payload.residentNote || "Resident submitted report from mobile app."),
+          visionSummary: String(payload.visionSummary || "Vision summary unavailable; DTE review required."),
+          findings: Array.isArray(payload.findings) ? payload.findings.map(String) : [],
+          riskScore: Number(payload.riskScore || 0.48)
+        };
+      }
+
+      function importIncomingMobileReport() {
+        var params = new URLSearchParams(window.location.search);
+        var encoded = params.get("report");
+        if (!encoded) return;
+        try {
+          var report = normalizeMobileReport(JSON.parse(decodeBase64Url(encoded)));
+          var existing = mobileReports.findIndex(function (item) { return item.id === report.id; });
+          if (existing >= 0) mobileReports[existing] = report;
+          else mobileReports.unshift(report);
+          saveMobileReports();
+          params.delete("report");
+          var url = new URL(window.location.href);
+          url.search = params.toString();
+          history.replaceState({}, "", url.toString());
+        } catch (e) {
+          console.warn("Could not import mobile report", e);
+        }
+      }
+
+      function sortedMobileReports() {
+        return mobileReports.slice().sort(function (a, b) {
+          if (mobileReportSort === "newest") return new Date(b.createdAt) - new Date(a.createdAt);
+          if (mobileReportSort === "status") return a.status.localeCompare(b.status);
+          return Number(b.riskScore || 0) - Number(a.riskScore || 0);
+        });
+      }
+
+      function updateMobileReportStatus(id, status) {
+        var report = mobileReports.find(function (item) { return item.id === id; });
+        if (!report) return;
+        report.status = status;
+        saveMobileReports();
+        renderMobileReports();
+      }
+
+      function renderMobileReports() {
+        var reports = sortedMobileReports();
+        var pending = mobileReports.filter(function (r) { return r.status === "Submitted"; }).length;
+        els.mobileReportSummary.textContent = mobileReports.length ?
+          mobileReports.length + " mobile reports / " + pending + " pending DTE review" :
+          "No mobile reports yet. Submit from the iOS app to import a report into this browser.";
+        els.mobileReportRows.innerHTML = reports.length ? reports.map(function (report) {
+          var findings = report.findings.length ? " / " + report.findings.slice(0, 3).join(", ") : "";
+          return '<article class="mobile-report-row">' +
+            '<div><strong>' + esc(report.severity) + ' ' + esc(report.category) + ' / ' + esc(report.status) + '</strong>' +
+            '<span>' + esc(report.addressHint) + ' / risk ' + esc(Math.round(Number(report.riskScore || 0) * 100)) + '% / ' + esc(report.guestName) + findings + '</span>' +
+            '<span>' + esc(report.visionSummary) + '</span>' +
+            '<span>Resident note: ' + esc(report.residentNote) + '</span></div>' +
+            '<div class="report-actions">' +
+              '<button type="button" data-report-action="Approved" data-report-id="' + esc(report.id) + '">Approve</button>' +
+              '<button type="button" data-report-action="Denied" data-report-id="' + esc(report.id) + '">Deny</button>' +
+              '<button type="button" data-report-action="Crew list" data-report-id="' + esc(report.id) + '">Crew list</button>' +
+            '</div>' +
+          '</article>';
+        }).join("") : '<div class="mobile-report-empty">Submit from the iOS app, then tap “Submit + publish to web queue.” The report imports here for sorting and DTE action.</div>';
+      }
+
       function guardrailPenalty(p) {
         return state.confidenceGuard && p.confidence < 0.67 && p.risk < 0.74 && p.report !== "verified" ? 0.15 : 0;
       }
@@ -5058,12 +5275,18 @@
         renderDisplayControls();
         renderFieldMeta(rows, packets);
         renderStormScenario(rows, packets);
+        renderMobileReports();
         drawMap(rows, packets);
         renderTable(rows, packets);
         renderReceipt(selectedPole());
       }
 
       document.addEventListener("click", function (e) {
+        var reportAction = e.target.closest("[data-report-action]");
+        if (reportAction) {
+          updateMobileReportStatus(reportAction.getAttribute("data-report-id"), reportAction.getAttribute("data-report-action"));
+          return;
+        }
         var command = e.target.closest("[data-command]");
         if (!command) return;
         performCommand(command.getAttribute("data-command"));
@@ -5146,6 +5369,10 @@
         state.showAlerts = els.showAlerts.checked;
         render();
       });
+      els.mobileReportSort.addEventListener("change", function () {
+        mobileReportSort = els.mobileReportSort.value;
+        renderMobileReports();
+      });
       els.exportCsv.addEventListener("click", exportCsv);
       els.exportJson.addEventListener("click", exportJson);
       els.printReceipt.addEventListener("click", function () { window.print(); });
@@ -5154,6 +5381,8 @@
         if (realMap.ready) realMap.map.invalidateSize();
       });
 
+      loadMobileReports();
+      importIncomingMobileReport();
       var launchParams = new URLSearchParams(window.location.search);
       if (launchParams.get("demo") !== "0") {
         runJudgeDemo(launchParams.get("screen") === "receipt");
