@@ -4,6 +4,10 @@ PoleProof is a static Hack Michigan DTE challenge demo for utility pole prioriti
 
 It turns pole-level risk evidence into crew-ready work packets and defensible receipts: each selected pole shows why it was prioritized, what a crew should do next, what public layers support the decision, and how DTE inspection/outage/work-order data would validate it in production.
 
+## Live Demo
+
+https://pole-proof.vercel.app
+
 ## Demo Path
 
 1. Open the app.
