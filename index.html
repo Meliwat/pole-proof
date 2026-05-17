@@ -1,0 +1,4897 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-accent="blue" data-density="comfortable" data-screen="work">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <title>PoleProof - Utility Pole Risk Receipts</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #edf5ee;
+      --muted: #8d9b91;
+      --subtle: #b9c7bd;
+      --line: #26372f;
+      --line-strong: #3a5448;
+      --paper: #07100d;
+      --panel: #0c1712;
+      --panel-2: #111f18;
+      --panel-3: #16251d;
+      --field: #0a1511;
+      --map-bg: #08130f;
+      --map-grid: #1b3027;
+      --map-water: #123341;
+      --green: #37b37f;
+      --green-dark: #1e7a55;
+      --amber: #e1a649;
+      --red: #ef6358;
+      --blue: #57a9dc;
+      --violet: #9c83e8;
+      --accent: var(--green);
+      --accent-dark: var(--green-dark);
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+      --radius: 6px;
+      --control-height: 36px;
+      --panel-pad: 16px;
+      --table-y: 8px;
+    }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --ink: #141714;
+      --muted: #5d655d;
+      --subtle: #334036;
+      --line: #cbd5c7;
+      --line-strong: #9cac96;
+      --paper: #f6f8f3;
+      --panel: #ffffff;
+      --panel-2: #fbfcf8;
+      --panel-3: #eef4ea;
+      --field: #e8eee4;
+      --map-bg: #e8eee4;
+      --map-grid: #d8e0d3;
+      --map-water: #cbdfe7;
+      --green: #247553;
+      --green-dark: #174d38;
+      --amber: #b66f1d;
+      --red: #bd392f;
+      --blue: #2d6796;
+      --violet: #6951a3;
+      --shadow: 0 8px 30px rgba(24, 32, 20, 0.08);
+    }
+
+    :root[data-accent="blue"] {
+      --accent: var(--blue);
+      --accent-dark: #2c6f9e;
+    }
+
+    :root[data-accent="green"] {
+      --accent: var(--green);
+      --accent-dark: var(--green-dark);
+    }
+
+    :root[data-accent="amber"] {
+      --accent: var(--amber);
+      --accent-dark: #a56a22;
+    }
+
+    :root[data-density="comfortable"] {
+      --control-height: 42px;
+      --panel-pad: 20px;
+      --table-y: 11px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    button, select, input, textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      min-height: 72px;
+      padding: 16px 24px;
+      color: #f8fbf5;
+      background: #111612;
+      border-bottom: 4px solid var(--green);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 7px 0 0;
+      color: #b9c5b5;
+      font-size: 12px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .primary-nav,
+    .bottom-tabs {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      min-height: 36px;
+      padding: 0 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 6px;
+      color: #dce8dd;
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .nav-btn.active {
+      color: #06100c;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .command-trigger {
+      min-height: 36px;
+      padding: 0 12px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 6px;
+      color: #e8f2e4;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(160px, 1fr));
+      border-bottom: 1px solid var(--line);
+      background: #fbfcf8;
+    }
+
+    .kpi {
+      min-height: 92px;
+      padding: 16px 18px;
+      border-right: 1px solid var(--line);
+    }
+
+    .kpi:last-child { border-right: 0; }
+
+    .kpi span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .kpi strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .kpi em {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-style: normal;
+      line-height: 1.25;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 280px minmax(440px, 1fr) 390px;
+      gap: 0;
+      min-height: calc(100vh - 165px);
+    }
+
+    .screen-summary {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(90deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 34%),
+        var(--panel-2);
+    }
+
+    .screen-summary::before {
+      content: none;
+      display: none;
+    }
+
+    .screen-summary h2 {
+      margin: 3px 0 0;
+      font-size: 24px;
+      line-height: 1.08;
+    }
+
+    .screen-summary p,
+    .screen-kicker {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .screen-kicker {
+      display: block;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .screen-action {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .screen-action .action-btn {
+      min-width: 190px;
+    }
+
+    .screen-panel[hidden],
+    [hidden] {
+      display: none !important;
+    }
+
+    .panel {
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+    }
+
+    .panel:last-child { border-right: 0; }
+
+    .controls {
+      padding: 18px 16px 22px;
+      overflow: auto;
+    }
+
+    .overview {
+      min-width: 0;
+      padding: var(--panel-pad);
+      background: var(--paper);
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.9fr) minmax(300px, 1.1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .overview-lead,
+    .overview-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      box-shadow: var(--shadow);
+    }
+
+    .overview-lead {
+      padding: 22px;
+    }
+
+    .overview-lead h2,
+    .overview-card h3 {
+      margin: 0;
+      color: var(--ink);
+      letter-spacing: 0.02em;
+    }
+
+    .overview-lead p,
+    .overview-card p {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .overview-card {
+      padding: 16px;
+    }
+
+    .overview-list {
+      display: grid;
+      gap: 9px;
+      margin: 14px 0 0;
+    }
+
+    .overview-row {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .overview-row:last-child {
+      border-bottom: 0;
+    }
+
+    .overview-row span {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .section {
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section:first-child { padding-top: 0; }
+    .section:last-child { border-bottom: 0; }
+
+    .section h2, .field-title h2, .receipt h2 {
+      margin: 0 0 12px;
+      color: #222721;
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    select, input[type="range"], textarea, input[type="text"], input[type="search"] {
+      width: 100%;
+    }
+
+    select, textarea, input[type="text"], input[type="search"] {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--ink);
+      background: #fbfcf8;
+    }
+
+    select { padding: 0 9px; }
+
+    textarea {
+      min-height: 72px;
+      padding: 9px;
+      resize: vertical;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .chip {
+      min-height: 36px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--ink);
+      background: #fbfcf8;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .chip.active {
+      color: #fff;
+      background: var(--green-dark);
+      border-color: var(--green-dark);
+    }
+
+    .range-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .toggle {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 9px;
+      align-items: start;
+      margin-top: 12px;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .toggle input {
+      margin-top: 1px;
+      width: 16px;
+      height: 16px;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .resident-search {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .resident-search input {
+      width: 100%;
+      padding: 0 10px;
+    }
+
+    .resident-search .action-btn {
+      min-width: 76px;
+    }
+
+    .search-status {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .action-btn {
+      min-height: 40px;
+      padding: 0 12px;
+      border-radius: 6px;
+      color: #fff;
+      background: var(--green);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .action-btn.secondary {
+      color: var(--ink);
+      background: #e9eee5;
+      border: 1px solid var(--line);
+    }
+
+    .action-btn.warn { background: var(--amber); }
+
+    .source-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .source-list li {
+      display: grid;
+      grid-template-columns: 7px 1fr;
+      gap: 8px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .source-list i {
+      width: 7px;
+      height: 7px;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .field {
+      min-width: 0;
+      background: #edf2e9;
+    }
+
+    .field-wrap {
+      padding: 18px;
+    }
+
+    .field-title {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+
+    .field-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .legend span {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      background: var(--green);
+    }
+
+    .map-shell {
+      position: relative;
+      overflow: hidden;
+      min-height: 360px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--field);
+      box-shadow: var(--shadow);
+    }
+
+    #map {
+      display: block;
+      width: 100%;
+      height: min(42vh, 430px);
+      min-height: 360px;
+    }
+
+    #realMap {
+      display: none;
+      width: 100%;
+      height: min(42vh, 430px);
+      min-height: 360px;
+      background: var(--map-bg);
+    }
+
+    .map-shell.real-map-active #realMap {
+      display: block;
+    }
+
+    .map-shell.real-map-active #map {
+      display: none;
+    }
+
+    .map-tip {
+      position: absolute;
+      z-index: 4;
+      display: none;
+      max-width: 240px;
+      padding: 10px;
+      border: 1px solid #172019;
+      border-radius: 6px;
+      color: #f9fcf6;
+      background: rgba(17, 22, 18, 0.94);
+      font-size: 12px;
+      pointer-events: none;
+      box-shadow: var(--shadow);
+    }
+
+    .leaflet-container {
+      font: inherit;
+      color: var(--ink);
+      background: var(--map-bg);
+    }
+
+    .leaflet-control-attribution,
+    .leaflet-control-zoom a {
+      color: #1c2a21;
+    }
+
+    .pole-marker-wrap {
+      border: 0;
+      background: transparent;
+    }
+
+    .pole-marker-pin {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 2px solid rgba(255, 255, 255, 0.96);
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(9, 18, 12, 0.28);
+    }
+
+    .pole-marker-pin.context {
+      border-width: 1px;
+      opacity: 0.52;
+      box-shadow: none;
+    }
+
+    .pole-marker-pin.packet {
+      border-color: var(--blue);
+      opacity: 0.98;
+    }
+
+    .pole-marker-pin.selected {
+      border-color: var(--ink);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--blue) 28%, transparent), 0 4px 14px rgba(9, 18, 12, 0.34);
+    }
+
+    .leaflet-tooltip.pole-tooltip {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      color: var(--ink);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .leaflet-popup-content {
+      margin: 12px;
+      min-width: 190px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .map-popup strong,
+    .map-popup span {
+      display: block;
+    }
+
+    .map-popup span {
+      margin-top: 4px;
+      color: var(--muted);
+    }
+
+    .map-popup-actions,
+    .location-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .map-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--panel);
+      font-size: 12px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .map-link.primary {
+      color: #06100c;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .map-link.secondary {
+      background: var(--panel-2);
+    }
+
+    .map-link:hover {
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+
+    .map-link.primary:hover {
+      color: #06100c;
+    }
+
+    .street-context-note {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: var(--panel);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .street-context-note strong {
+      color: var(--ink);
+    }
+
+    .resident-summary {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--panel);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .resident-summary strong {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .resident-summary.impact {
+      border-color: var(--line);
+      background: var(--panel-2);
+    }
+
+    .challenge-fit {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .challenge-fit span {
+      min-width: 0;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: var(--panel-2);
+      font-size: 10px;
+      font-weight: 850;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .data-proof {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      margin-top: 10px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--panel-2);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .data-proof.real { border-color: var(--green); }
+    .data-proof.synthetic { border-color: var(--blue); }
+    .data-proof.validation { border-color: var(--amber); }
+
+    .proof-grid,
+    .formula-grid,
+    .validation-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .proof-item,
+    .formula-item,
+    .validation-item {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-2);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .proof-item strong,
+    .formula-item strong,
+    .validation-item strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .proof-item span,
+    .formula-item span,
+    .validation-item span {
+      color: var(--muted);
+    }
+
+    .formula-line {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--panel);
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.35;
+    }
+
+    .scenario-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-2);
+    }
+
+    .scenario-card strong,
+    .scenario-card span {
+      display: block;
+    }
+
+    .scenario-card strong {
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .scenario-card span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .worklist {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .worklist-head {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcf8;
+    }
+
+    .worklist-head strong {
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .worklist-head span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .table-wrap {
+      max-height: 380px;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #e5ebe1;
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      color: var(--muted);
+      background: #f4f7f1;
+      font-size: 10px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    th:nth-child(1), td:nth-child(1) { width: 94px; }
+    th:nth-child(2), td:nth-child(2) { width: 126px; }
+    th:nth-child(3), td:nth-child(3) { width: 82px; }
+    th:nth-child(4), td:nth-child(4) { width: 112px; }
+    th:nth-child(5), td:nth-child(5) { width: 92px; }
+    th:nth-child(6), td:nth-child(6) { width: 92px; }
+    th:nth-child(7), td:nth-child(7) { min-width: 126px; }
+
+    tr.row {
+      cursor: pointer;
+    }
+
+    tr.row:hover, tr.row.active {
+      background: #eef6ea;
+    }
+
+    .tier {
+      display: inline-flex;
+      min-width: 72px;
+      justify-content: center;
+      padding: 4px 7px;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 850;
+    }
+
+    .tier.critical { background: var(--red); }
+    .tier.high { background: var(--amber); }
+    .tier.elevated { color: #1f231d; background: #e3cf3f; }
+    .tier.routine { background: var(--green); }
+
+    .receipt {
+      padding: 18px;
+      overflow: auto;
+    }
+
+    .receipt-shell {
+      display: grid;
+      gap: 14px;
+    }
+
+    .receipt-card {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .receipt-top {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcf8;
+    }
+
+    .receipt-top h3 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.15;
+    }
+
+    .receipt-top p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .receipt-body {
+      padding: 16px;
+    }
+
+    .big-score {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .score-box {
+      min-height: 74px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #f8faf5;
+    }
+
+    .score-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .score-box strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .driver {
+      display: grid;
+      grid-template-columns: 1fr 58px;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #e7ece3;
+    }
+
+    .driver:last-child { border-bottom: 0; }
+
+    .driver strong {
+      display: block;
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .driver span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    .bar {
+      width: 58px;
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e2e7de;
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: var(--green);
+    }
+
+    .packet-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .packet-line {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #e7ece3;
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .packet-line:last-child { border-bottom: 0; }
+
+    .packet-line span {
+      color: var(--muted);
+      font-weight: 850;
+      text-transform: uppercase;
+      font-size: 10px;
+    }
+
+    .audit {
+      display: grid;
+      gap: 8px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .audit li {
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      background: #f4f7f1;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .empty {
+      padding: 24px;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 6px;
+      background: #fff;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .command-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: start center;
+      padding: 12vh 18px 18px;
+      background: rgba(5, 10, 7, 0.58);
+    }
+
+    .command-dialog {
+      width: min(620px, 100%);
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+    }
+
+    .command-head {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .command-head h2 {
+      margin: 0 0 8px;
+      color: var(--ink);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .command-input {
+      width: 100%;
+      min-height: 42px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--panel);
+      outline: none;
+    }
+
+    .command-list {
+      max-height: 360px;
+      overflow: auto;
+      padding: 8px;
+    }
+
+    .command-item {
+      display: grid;
+      grid-template-columns: minmax(150px, 1fr) auto;
+      gap: 10px;
+      width: 100%;
+      min-height: 46px;
+      padding: 9px 10px;
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: transparent;
+      text-align: left;
+    }
+
+    .command-item:hover,
+    .command-item.active,
+    .command-item:focus-visible {
+      color: #06100c;
+      background: var(--accent);
+      outline: none;
+    }
+
+    .command-item strong {
+      font-size: 13px;
+    }
+
+    .command-item span {
+      color: inherit;
+      opacity: 0.72;
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .red { color: var(--red); }
+    .amber { color: var(--amber); }
+    .green { color: var(--green); }
+    .blue { color: var(--blue); }
+
+    .topbar {
+      min-height: 68px;
+      padding: 14px 22px;
+      background: linear-gradient(180deg, #0c1711 0%, #07100d 100%);
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    :root[data-theme="light"] .topbar {
+      color: #f8fbf5;
+      background: #111612;
+    }
+
+    :root[data-theme="light"] .brand p {
+      color: #b9c5b5;
+    }
+
+    :root[data-theme="light"] .topbar .pill {
+      color: #eef7ee;
+      border-color: rgba(255, 255, 255, 0.32);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .brand::before {
+      content: "";
+      width: 10px;
+      height: 36px;
+      border-radius: 2px;
+      background: linear-gradient(180deg, var(--accent), var(--blue));
+      box-shadow: 0 0 24px rgba(55, 179, 127, 0.22);
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      letter-spacing: 0.08em;
+    }
+
+    .brand p {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .pill {
+      border-color: var(--line-strong);
+      color: var(--subtle);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .ops-banner {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      padding: 10px 22px;
+      border-bottom: 1px solid var(--line);
+      color: var(--subtle);
+      background: var(--panel-2);
+      font-size: 12px;
+    }
+
+    .ops-banner[hidden] { display: none; }
+
+    .ops-banner strong {
+      color: var(--ink);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .ops-banner span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-right: 14px;
+      white-space: nowrap;
+    }
+
+    .ops-banner i {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 14px var(--accent);
+    }
+
+    .kpis {
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .kpi {
+      position: relative;
+      min-height: 104px;
+      padding: 15px 18px 14px;
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    }
+
+    .kpi::before {
+      content: none;
+      display: none;
+    }
+
+    .kpi span {
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
+    .kpi strong {
+      color: var(--ink);
+      font-size: 27px;
+    }
+
+    .kpi em {
+      color: var(--muted);
+    }
+
+    .kpi-meter {
+      height: 4px;
+      margin-top: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(141, 155, 145, 0.22);
+    }
+
+    .kpi-meter i {
+      display: block;
+      height: 100%;
+      width: 40%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--blue));
+    }
+
+    .shell {
+      grid-template-columns: minmax(0, 1fr);
+      min-height: calc(100vh - 278px);
+      background: var(--paper);
+    }
+
+    :root[data-screen="work"] .shell {
+      grid-template-columns: 284px minmax(500px, 1fr);
+    }
+
+    :root[data-screen="audit"] .shell {
+      grid-template-columns: minmax(0, 960px);
+      justify-content: center;
+    }
+
+    :root[data-screen="map"] .worklist,
+    :root[data-screen="map"] .receipt-header,
+    :root[data-screen="audit"] [data-panel-section="work"],
+    :root[data-screen="work"] [data-panel-section="audit"] {
+      display: none;
+    }
+
+    :root[data-screen="work"] .field-title {
+      grid-template-columns: 1fr;
+    }
+
+    :root[data-screen="receipt"] .receipt {
+      max-width: 1180px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .panel {
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+    }
+
+    .controls,
+    .receipt {
+      padding: var(--panel-pad);
+    }
+
+    .section {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section h2,
+    .field-title h2,
+    .receipt h2 {
+      color: var(--ink);
+      letter-spacing: 0.08em;
+    }
+
+    label {
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
+    select,
+    textarea,
+    input[type="text"],
+    input[type="search"] {
+      min-height: var(--control-height);
+      border-color: var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--panel-2);
+      outline: none;
+    }
+
+    select:focus,
+    textarea:focus,
+    input[type="text"]:focus,
+    input[type="search"]:focus,
+    button:focus-visible {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
+      outline: none;
+    }
+
+    input[type="range"] {
+      accent-color: var(--accent);
+    }
+
+    .range-row {
+      color: var(--muted);
+    }
+
+    .segmented,
+    .multi-chip {
+      display: grid;
+      gap: 7px;
+    }
+
+    .multi-chip {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .chip {
+      min-height: var(--control-height);
+      border-color: var(--line);
+      border-radius: var(--radius);
+      color: var(--subtle);
+      background: var(--panel-2);
+      letter-spacing: 0.02em;
+    }
+
+    .chip.active {
+      color: #06100c;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .chip:hover,
+    .action-btn:hover {
+      filter: brightness(1.08);
+    }
+
+    .action-btn {
+      min-height: var(--control-height);
+      border-radius: var(--radius);
+      color: #06100c;
+      background: var(--accent);
+      letter-spacing: 0.06em;
+    }
+
+    .action-btn.secondary {
+      color: var(--ink);
+      background: var(--panel-2);
+      border-color: var(--line-strong);
+    }
+
+    .source-list li,
+    .toggle {
+      color: var(--subtle);
+    }
+
+    .source-list i {
+      background: var(--accent);
+    }
+
+    .field {
+      background: var(--field);
+    }
+
+    .field-wrap {
+      padding: var(--panel-pad);
+    }
+
+    .field-title {
+      margin-bottom: 10px;
+    }
+
+    .field-title p {
+      color: var(--muted);
+    }
+
+    .field-meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .field-meta span {
+      padding: 5px 8px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-2);
+    }
+
+    .field-visuals {
+      display: block;
+    }
+
+    .legend {
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .map-shell {
+      border-color: var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--map-bg);
+      box-shadow: var(--shadow);
+    }
+
+    .map-tip {
+      border-color: var(--line-strong);
+      color: var(--ink);
+      background: rgba(7, 16, 13, 0.95);
+    }
+
+    .worklist {
+      border-color: var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+
+    .worklist-head {
+      border-bottom-color: var(--line);
+      background: var(--panel-2);
+    }
+
+    .worklist-head strong {
+      color: var(--ink);
+      letter-spacing: 0.06em;
+    }
+
+    .worklist-head span {
+      color: var(--muted);
+    }
+
+    table {
+      font-size: 12px;
+    }
+
+    th, td {
+      padding: var(--table-y) 10px;
+      border-bottom-color: var(--line);
+    }
+
+    th {
+      color: var(--muted);
+      background: var(--panel-2);
+      letter-spacing: 0.08em;
+    }
+
+    tr.row:hover,
+    tr.row.active {
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+
+    tr.row.active td:first-child {
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .packet-badge {
+      display: inline-flex;
+      margin-left: 6px;
+      padding: 2px 5px;
+      border: 1px solid color-mix(in srgb, var(--blue) 62%, transparent);
+      border-radius: 999px;
+      color: var(--blue);
+      font-size: 9px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .risk-cell {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 7px;
+      align-items: center;
+      min-width: 92px;
+    }
+
+    .risk-meter {
+      height: 5px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(141, 155, 145, 0.22);
+    }
+
+    .risk-meter i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+
+    .tier {
+      border-radius: var(--radius);
+      letter-spacing: 0.06em;
+    }
+
+    .receipt {
+      background: var(--panel);
+    }
+
+    .receipt-header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin: calc(var(--panel-pad) * -1) calc(var(--panel-pad) * -1) 14px;
+      padding: 14px var(--panel-pad);
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 94%, transparent);
+      backdrop-filter: blur(12px);
+    }
+
+    .receipt-header h2 {
+      margin: 0;
+    }
+
+    .receipt-status {
+      max-width: 210px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      line-height: 1.3;
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    .receipt-shell {
+      gap: 12px;
+    }
+
+    .receipt-card {
+      border-color: var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: none;
+    }
+
+    .receipt-top {
+      border-bottom-color: var(--line);
+      background: var(--panel-2);
+    }
+
+    .receipt-top h3 {
+      color: var(--ink);
+      letter-spacing: 0.01em;
+    }
+
+    .receipt-top p {
+      color: var(--muted);
+    }
+
+    .receipt-lock {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .receipt-lock span {
+      padding: 4px 7px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--subtle);
+      background: var(--panel);
+      font-size: 10px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .score-box {
+      border-color: var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-2);
+    }
+
+    .score-box span,
+    .packet-line span {
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
+    .score-box strong {
+      color: var(--ink);
+    }
+
+    .score-box strong.red { color: var(--red); }
+    .score-box strong.amber { color: var(--amber); }
+    .score-box strong.green { color: var(--green); }
+    .score-box strong.blue { color: var(--blue); }
+
+    .driver,
+    .packet-line {
+      border-bottom-color: var(--line);
+    }
+
+    .driver span {
+      color: var(--muted);
+    }
+
+    .bar {
+      background: rgba(141, 155, 145, 0.22);
+    }
+
+    .bar i {
+      background: linear-gradient(90deg, var(--accent), var(--blue));
+    }
+
+    .audit li {
+      border-color: var(--line);
+      background: var(--panel-2);
+    }
+
+    .empty {
+      color: var(--muted);
+      background: var(--panel-2);
+      border-color: var(--line);
+    }
+
+    /* Human-readable mode: reduce simultaneous choices and expose advanced detail on demand. */
+    .topbar {
+      min-height: 64px;
+      padding: 14px 20px;
+    }
+
+    .brand p {
+      max-width: 560px;
+      color: var(--subtle);
+      font-size: 13px;
+      text-transform: none;
+    }
+
+    .kpi {
+      min-height: 86px;
+      padding: 14px 16px;
+    }
+
+    .kpi strong {
+      font-size: 26px;
+    }
+
+    .kpi em {
+      display: none;
+    }
+
+    .ops-banner {
+      padding: 8px 20px;
+    }
+
+    .shell {
+      grid-template-columns: minmax(250px, 286px) minmax(0, 1fr);
+      min-height: auto;
+    }
+
+    .controls {
+      grid-row: 1 / span 2;
+      padding: 18px 16px;
+    }
+
+    .field {
+      border-right: 0;
+    }
+
+    .receipt {
+      grid-column: 2;
+      border-top: 1px solid var(--line);
+      background: var(--field);
+      overflow: visible;
+    }
+
+    .section {
+      padding: 14px 0;
+    }
+
+    details.section {
+      padding: 0;
+    }
+
+    .disclosure {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .disclosure summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 48px;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      list-style: none;
+      text-transform: uppercase;
+    }
+
+    .disclosure summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .disclosure summary::after {
+      content: "+";
+      color: var(--accent);
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .disclosure[open] summary::after {
+      content: "-";
+    }
+
+    .disclosure summary small {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .disclosure > :not(summary) {
+      margin-bottom: 14px;
+    }
+
+    .field-title {
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .field-title p {
+      max-width: 620px;
+      font-size: 13px;
+    }
+
+    .field-tools {
+      display: grid;
+      gap: 10px;
+      justify-items: end;
+    }
+
+    .field-visuals {
+      display: block;
+    }
+
+    .field-visuals .map-shell {
+      margin-top: 12px;
+    }
+
+    .map-shell {
+      min-height: 430px;
+    }
+
+    #map {
+      height: min(48vh, 500px);
+      min-height: 430px;
+    }
+
+    #realMap {
+      height: min(48vh, 500px);
+      min-height: 430px;
+    }
+
+    .table-wrap {
+      max-height: 310px;
+    }
+
+    .worklist {
+      margin-top: 16px;
+    }
+
+    .receipt-header {
+      position: static;
+      margin: calc(var(--panel-pad) * -1) calc(var(--panel-pad) * -1) 14px;
+    }
+
+    .receipt-status {
+      max-width: 360px;
+    }
+
+    .receipt-shell {
+      grid-template-columns: minmax(300px, 1fr) minmax(300px, 0.9fr);
+      align-items: start;
+    }
+
+    .receipt-card:first-child {
+      grid-row: span 2;
+    }
+
+    .receipt-card {
+      background: var(--panel);
+    }
+
+    .shell {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    :root[data-screen="work"] .shell {
+      grid-template-columns: minmax(250px, 286px) minmax(0, 1fr);
+    }
+
+    :root[data-screen="audit"] .shell {
+      grid-template-columns: minmax(0, 960px);
+      justify-content: center;
+    }
+
+    .controls {
+      grid-row: auto;
+    }
+
+    .receipt {
+      grid-column: auto;
+    }
+
+    :root[data-screen="receipt"] .receipt {
+      border-top: 0;
+    }
+
+    @media (max-width: 1180px) {
+      .shell {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      :root[data-screen="work"] .shell {
+        grid-template-columns: minmax(240px, 280px) minmax(420px, 1fr);
+      }
+    }
+
+    @media (max-width: 820px) {
+      .topbar, .ops-banner, .field-title, .worklist-head, .screen-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .top-actions, .legend, .screen-action {
+        justify-content: flex-start;
+      }
+
+      .primary-nav {
+        width: 100%;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+      }
+
+      .ops-banner {
+        padding: 10px 16px;
+      }
+
+      .ops-banner span {
+        white-space: normal;
+      }
+
+      .kpis {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+      }
+
+      .kpi {
+        min-width: 168px;
+        scroll-snap-align: start;
+      }
+
+      .kpi {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .shell {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+
+      :root[data-screen="work"] .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .overview,
+      .field,
+      .controls,
+      .receipt {
+        order: initial;
+        grid-row: auto;
+      }
+
+      :root[data-screen="work"] .field {
+        order: 1;
+      }
+
+      :root[data-screen="work"] .controls {
+        order: 2;
+      }
+
+      .overview-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .receipt-header {
+        position: static;
+      }
+
+      .field-visuals {
+        display: block;
+      }
+
+      .field-tools {
+        justify-items: start;
+      }
+
+      .receipt-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .receipt-card:first-child {
+        grid-row: auto;
+      }
+
+      .challenge-fit {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .proof-grid,
+      .formula-grid,
+      .validation-grid,
+      .scenario-card {
+        grid-template-columns: 1fr;
+      }
+
+      th, td {
+        padding: 8px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .topbar {
+        padding: 14px 16px;
+      }
+
+      body {
+        padding-bottom: 64px;
+      }
+
+      .brand {
+        align-items: flex-start;
+      }
+
+      .kpis {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .multi-chip {
+        grid-template-columns: 1fr;
+      }
+
+      .challenge-fit {
+        grid-template-columns: 1fr;
+      }
+
+      .risk-cell {
+        grid-template-columns: 1fr;
+        min-width: 76px;
+      }
+
+      #map {
+        min-height: 320px;
+      }
+
+      #realMap {
+        min-height: 320px;
+      }
+
+      .bottom-tabs {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 40;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0;
+        border-top: 1px solid var(--line);
+        background: var(--panel);
+      }
+
+      .bottom-tabs .nav-btn {
+        min-height: 58px;
+        padding: 0 4px;
+        border: 0;
+        border-radius: 0;
+        font-size: 10px;
+      }
+    }
+
+    @media (min-width: 561px) {
+      .bottom-tabs {
+        display: none;
+      }
+    }
+
+    /* DESIGN.md alignment: Carbon base, Uber map actions, Raycast command surface. */
+    :root {
+      --carbon-blue: #0f62fe;
+      --carbon-blue-dark: #0043ce;
+      --carbon-green: #24a148;
+      --carbon-green-dark: #0e6027;
+      --carbon-yellow: #f1c21b;
+      --carbon-orange: #b66f1d;
+      --carbon-red: #da1e28;
+      --shadow: none;
+      --radius: 2px;
+    }
+
+    :root[data-theme="light"] {
+      --ink: #161616;
+      --muted: #525252;
+      --subtle: #393939;
+      --line: #e0e0e0;
+      --line-strong: #8d8d8d;
+      --paper: #f4f4f4;
+      --panel: #ffffff;
+      --panel-2: #f4f4f4;
+      --panel-3: #e0e0e0;
+      --field: #f4f4f4;
+      --map-bg: #edf5f7;
+      --map-grid: #d0e2e9;
+      --map-water: #bae6ff;
+      --green: var(--carbon-green);
+      --green-dark: var(--carbon-green-dark);
+      --amber: var(--carbon-yellow);
+      --red: var(--carbon-red);
+      --blue: var(--carbon-blue);
+      --violet: #8a3ffc;
+    }
+
+    :root[data-theme="dark"] {
+      --ink: #f4f4f4;
+      --muted: #c6c6c6;
+      --subtle: #e0e0e0;
+      --line: #393939;
+      --line-strong: #6f6f6f;
+      --paper: #161616;
+      --panel: #262626;
+      --panel-2: #161616;
+      --panel-3: #393939;
+      --field: #161616;
+      --map-bg: #1b2b31;
+      --map-grid: #334b53;
+      --map-water: #16313d;
+      --green: #42be65;
+      --green-dark: #24a148;
+      --amber: #f1c21b;
+      --red: #fa4d56;
+      --blue: #4589ff;
+      --violet: #be95ff;
+    }
+
+    :root[data-accent="blue"] {
+      --accent: var(--carbon-blue);
+      --accent-dark: var(--carbon-blue-dark);
+    }
+
+    :root[data-accent="green"] {
+      --accent: var(--carbon-green);
+      --accent-dark: var(--carbon-green-dark);
+    }
+
+    :root[data-accent="amber"] {
+      --accent: var(--carbon-orange);
+      --accent-dark: #8a4b12;
+    }
+
+    :root[data-theme="dark"][data-accent="blue"] {
+      --accent: #4589ff;
+      --accent-dark: #78a9ff;
+    }
+
+    :root[data-theme="dark"][data-accent="green"] {
+      --accent: #42be65;
+      --accent-dark: #6fdc8c;
+    }
+
+    :root[data-theme="dark"][data-accent="amber"] {
+      --accent: #f1c21b;
+      --accent-dark: #fddc69;
+    }
+
+    body {
+      font-feature-settings: "tnum" 1;
+    }
+
+    :root[data-theme] .topbar {
+      color: #f4f4f4;
+      background: #161616;
+      border-bottom: 1px solid #393939;
+      box-shadow: none;
+    }
+
+    :root[data-theme] .brand p {
+      color: #c6c6c6;
+    }
+
+    .topbar .primary-nav {
+      gap: 0;
+    }
+
+    .topbar .nav-btn {
+      min-height: 40px;
+      border: 0;
+      border-left: 1px solid #393939;
+      border-radius: 0;
+      color: #c6c6c6;
+      background: transparent;
+      font-weight: 650;
+    }
+
+    .topbar .nav-btn:hover,
+    .topbar .nav-btn:focus-visible {
+      color: #ffffff;
+      background: #262626;
+    }
+
+    .topbar .nav-btn.active {
+      color: #ffffff;
+      background: #262626;
+      border-color: #393939;
+      box-shadow: inset 0 -3px 0 var(--accent);
+    }
+
+    :root[data-theme] .topbar .pill {
+      border-color: #393939;
+      border-radius: 0;
+      color: #e0e0e0;
+      background: #262626;
+      text-transform: none;
+    }
+
+    .command-trigger {
+      gap: 7px;
+      font-weight: 650;
+    }
+
+    .command-trigger kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 20px;
+      padding: 0 6px;
+      border: 1px solid #525252;
+      border-bottom-color: #8d8d8d;
+      border-radius: 4px;
+      color: #ffffff;
+      background: #393939;
+      font: 650 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .kpis,
+    .screen-summary,
+    .worklist-head,
+    .receipt-top {
+      background: var(--panel);
+    }
+
+    .kpi {
+      position: relative;
+      background: var(--panel);
+    }
+
+    .kpi::before {
+      content: none;
+      display: none;
+    }
+
+    .screen-summary {
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .screen-summary::before {
+      content: none;
+      display: none;
+    }
+
+    .screen-summary h2,
+    .overview-lead h2,
+    .overview-card h3,
+    .receipt-top h3 {
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+
+    .screen-kicker,
+    .section h2,
+    .field-title h2,
+    .receipt h2,
+    label,
+    th,
+    .worklist-head strong,
+    .score-box span,
+    .packet-line span,
+    .overview-row span {
+      letter-spacing: 0;
+    }
+
+    .overview,
+    .field,
+    .receipt,
+    .controls {
+      background: var(--paper);
+    }
+
+    .overview-lead,
+    .overview-card,
+    .receipt-card,
+    .worklist,
+      .map-shell,
+      .score-box,
+      .street-context-note,
+      .empty,
+    .audit li {
+      border-color: var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: none;
+    }
+
+    .overview-lead,
+    .overview-card {
+      background: var(--panel);
+    }
+
+    .overview-lead {
+      border-top: 1px solid var(--line);
+    }
+
+    select,
+    textarea,
+    input[type="text"],
+    input[type="search"] {
+      border: 0;
+      border-bottom: 2px solid var(--line-strong);
+      border-radius: 0;
+      background: var(--panel-2);
+    }
+
+    select:focus,
+    textarea:focus,
+    input[type="text"]:focus,
+    input[type="search"]:focus {
+      border-bottom-color: var(--accent);
+      box-shadow: inset 0 -1px 0 var(--accent);
+    }
+
+    button:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--accent) 36%, transparent);
+      outline-offset: 2px;
+    }
+
+    .chip,
+    .action-btn,
+    .view-tabs,
+    .view-tabs .chip,
+    .screen-action .action-btn {
+      border-radius: 0;
+    }
+
+    .chip {
+      background: var(--panel);
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+
+    .chip.active,
+    .view-tabs .chip.active {
+      color: #ffffff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    :root[data-theme="dark"] .chip.active,
+    :root[data-accent="amber"] .chip.active,
+    :root[data-theme="dark"] .view-tabs .chip.active,
+    :root[data-accent="amber"] .view-tabs .chip.active {
+      color: #161616;
+    }
+
+    .view-tabs {
+      gap: 0;
+      padding: 0;
+      border-color: var(--line);
+      background: var(--panel);
+    }
+
+    .action-btn {
+      border: 1px solid var(--accent);
+      color: #ffffff;
+      background: var(--accent);
+      font-weight: 650;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    :root[data-theme="dark"] .action-btn:not(.secondary),
+    :root[data-accent="amber"] .action-btn:not(.secondary) {
+      color: #161616;
+    }
+
+    .action-btn.secondary {
+      color: var(--ink);
+      background: var(--panel);
+      border-color: var(--line-strong);
+    }
+
+    .worklist {
+      background: var(--panel);
+    }
+
+    .worklist-head {
+      border-bottom-color: var(--line);
+    }
+
+    .table-wrap,
+    table {
+      background: var(--panel);
+    }
+
+    th,
+    td {
+      border-bottom-color: var(--line);
+    }
+
+    th {
+      color: var(--subtle);
+      background: var(--panel-2);
+      font-weight: 650;
+    }
+
+    td:nth-child(2),
+    .receipt-status {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    tr.row:hover {
+      background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+    }
+
+    tr.row.active {
+      background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .tier {
+      border-radius: 999px;
+      font-weight: 750;
+    }
+
+    .tier.high,
+    .tier.elevated {
+      color: #161616;
+      background: var(--carbon-yellow);
+    }
+
+    .map-link {
+      min-height: 36px;
+      padding: 0 14px;
+      border-radius: 999px;
+      color: var(--ink);
+      background: var(--panel);
+      font-weight: 750;
+    }
+
+    .map-link.primary {
+      color: #ffffff;
+      background: #161616;
+      border-color: #161616;
+    }
+
+    .map-link.primary:hover {
+      color: #ffffff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    :root[data-theme="dark"] .map-link.primary {
+      color: #161616;
+      background: #f4f4f4;
+      border-color: #f4f4f4;
+    }
+
+    .street-context-note {
+      border-color: var(--line);
+    }
+
+    .leaflet-tooltip.pole-tooltip,
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      box-shadow: none;
+    }
+
+    .bottom-tabs .nav-btn {
+      border-radius: 0;
+      color: var(--muted);
+      background: var(--panel);
+    }
+
+    .bottom-tabs .nav-btn.active {
+      color: var(--ink);
+      background: var(--panel-2);
+      box-shadow: inset 0 -3px 0 var(--accent);
+    }
+
+    .command-overlay {
+      z-index: 5000;
+      background: rgba(0, 0, 0, 0.56);
+      backdrop-filter: blur(4px);
+    }
+
+    .command-dialog {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      color: #f4f4f4;
+      background: #090b10;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.54);
+    }
+
+    .command-head {
+      border-bottom-color: rgba(255, 255, 255, 0.10);
+      background: #111318;
+    }
+
+    .command-head h2 {
+      color: #f4f4f4;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .command-dialog .command-input {
+      border: 1px solid #303642;
+      border-radius: 6px;
+      color: #ffffff;
+      background: #05070b;
+    }
+
+    .command-dialog .command-input:focus {
+      border-color: #78a9ff;
+      box-shadow: 0 0 0 3px rgba(69, 137, 255, 0.28);
+    }
+
+    .command-list {
+      background: #090b10;
+    }
+
+    .command-item {
+      border-radius: 6px;
+      color: #f4f4f4;
+    }
+
+    .command-item:hover,
+    .command-item.active,
+    .command-item:focus-visible {
+      color: #ffffff;
+      background: #0f62fe;
+    }
+
+    .command-item span {
+      align-self: center;
+      padding: 2px 7px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      color: #c6c6c6;
+      background: rgba(255, 255, 255, 0.06);
+      opacity: 1;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .command-item.active span,
+    .command-item:hover span,
+    .command-item:focus-visible span {
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.28);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .command-dialog .empty {
+      color: #c6c6c6;
+      background: #111318;
+      border-color: #303642;
+    }
+
+    :root[data-demo="true"][data-screen="work"] .controls {
+      display: none !important;
+    }
+
+    :root[data-demo="true"][data-screen="work"] .shell {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* Impeccable product polish: restrained accents, familiar states, no side-stripe callouts. */
+    .screen-summary {
+      background: var(--panel);
+      box-shadow: inset 0 -1px 0 var(--line);
+    }
+
+    .screen-summary::before,
+    .kpi::before {
+      content: none;
+      display: none;
+    }
+
+    .kpi {
+      background: var(--panel);
+    }
+
+    .kpi-meter i {
+      background: var(--accent);
+    }
+
+    .resident-summary,
+    .resident-summary.impact,
+    .street-context-note,
+    .scenario-card,
+    .audit li {
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    .resident-summary {
+      background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+    }
+
+    .resident-summary.impact {
+      background: var(--panel-2);
+    }
+
+    .street-context-note {
+      background: var(--panel-2);
+    }
+
+    .scenario-card {
+      border-color: color-mix(in srgb, var(--amber) 34%, var(--line));
+      background: color-mix(in srgb, var(--amber) 7%, var(--panel));
+    }
+
+    .audit li {
+      background: var(--panel-2);
+    }
+
+    .data-proof {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .data-proof.real {
+      border-color: color-mix(in srgb, var(--green) 52%, var(--line));
+      background: color-mix(in srgb, var(--green) 8%, var(--panel));
+    }
+
+    .data-proof.synthetic {
+      border-color: color-mix(in srgb, var(--blue) 42%, var(--line));
+      background: color-mix(in srgb, var(--blue) 7%, var(--panel));
+    }
+
+    .data-proof.validation {
+      border-color: color-mix(in srgb, var(--amber) 48%, var(--line));
+      background: color-mix(in srgb, var(--amber) 8%, var(--panel));
+    }
+
+    tr.row.active,
+    tr.row.active td:first-child {
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    @media (max-width: 560px) {
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        min-height: auto;
+      }
+
+      .topbar .primary-nav {
+        display: none;
+      }
+
+      .top-actions {
+        justify-content: flex-start;
+      }
+
+      .top-actions > .pill:not(.command-trigger) {
+        display: none;
+      }
+
+      .screen-summary {
+        padding: 18px 20px;
+      }
+
+      .screen-action,
+      .screen-action .action-btn {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .bottom-tabs {
+        z-index: 4500;
+      }
+
+      .bottom-tabs .nav-btn {
+        border-right: 1px solid var(--line);
+      }
+    }
+
+    @media print {
+      .controls, .field, .top-actions { display: none; }
+      .topbar, .receipt { color: #000; background: #fff; }
+      .shell { display: block; }
+      .receipt-card { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>POLEPROOF</h1>
+      <p>Every pole decision ships with a defensible, audit-ready receipt: prioritization a regulator and a crew can both trust.</p>
+    </div>
+    <div class="top-actions">
+      <nav class="primary-nav" id="primaryNav" aria-label="Primary screens"></nav>
+    </div>
+  </header>
+
+  <section class="ops-banner" id="opsBanner" aria-live="polite"></section>
+
+  <section class="kpis" id="kpis" aria-label="PoleProof performance indicators"></section>
+
+  <section class="screen-summary" aria-live="polite">
+    <div>
+      <span class="screen-kicker" id="screenKicker">Field</span>
+      <h2 id="screenTitle">Michigan field prioritization</h2>
+      <p id="screenBlurb">Map-based crew prioritization with filters, ranked work packets, and receipt-backed decisions.</p>
+    </div>
+    <div class="screen-action" id="screenAction"></div>
+  </section>
+
+  <div class="shell">
+    <section class="panel overview screen-panel" id="overviewScreen" data-screen-panel="overview" aria-label="Overview"></section>
+
+    <aside class="panel controls screen-panel" data-screen-panel="work audit" aria-label="Controls">
+      <div class="section" data-panel-section="work">
+        <h2>Prioritization</h2>
+        <label for="objective">Objective</label>
+        <select id="objective">
+          <option value="outage">Prevent outage minutes</option>
+          <option value="audit">Maximize audit confidence</option>
+          <option value="crew">Minimize crew friction</option>
+        </select>
+
+        <label>Risk tier</label>
+        <div class="segmented" id="tierControls"></div>
+
+        <label for="county">County</label>
+        <select id="county"></select>
+
+        <label for="minRisk">Minimum risk</label>
+        <input id="minRisk" type="range" min="0" max="95" value="0">
+        <div class="range-row"><span id="minRiskLabel">>= 0%</span><span>risk floor</span></div>
+
+        <label for="budget">Inspection budget</label>
+        <input id="budget" type="range" min="20" max="340" value="110">
+        <div class="range-row"><span id="budgetLabel">110 packets</span><span>current cycle</span></div>
+      </div>
+
+      <details class="section disclosure" data-panel-section="audit">
+        <summary><span>Guardrails</span><small>3 rules</small></summary>
+        <label class="toggle">
+          <input id="confidenceGuard" type="checkbox" checked>
+          <span>Hold back low-confidence poles unless corroborated or high criticality.</span>
+        </label>
+        <label class="toggle">
+          <input id="communityOverlay" type="checkbox" checked>
+          <span>Show resident and field crew corroboration as an overlay, not a training signal.</span>
+        </label>
+        <label class="toggle">
+          <input id="explainability" type="checkbox" checked>
+          <span>Require every packet to include top drivers, sources, and a receipt hash.</span>
+        </label>
+      </details>
+
+      <details class="section disclosure" data-panel-section="audit">
+        <summary><span>Display</span><small>theme, density</small></summary>
+        <label>Theme</label>
+        <div class="segmented" id="themeControls"></div>
+        <label>Density</label>
+        <div class="segmented" id="densityControls"></div>
+        <label>Accent</label>
+        <div class="multi-chip" id="accentControls"></div>
+        <label class="toggle">
+          <input id="showAlerts" type="checkbox" checked>
+          <span>Show the active incident and validation banner above the instrument panel.</span>
+        </label>
+      </details>
+
+      <div class="section" data-panel-section="work audit">
+        <h2>Exports</h2>
+        <div class="btn-row">
+          <button class="action-btn secondary" id="exportCsv">Export work packets CSV</button>
+          <button class="action-btn secondary" id="exportJson">Export selected receipt JSON</button>
+          <button class="action-btn secondary" id="printReceipt">Print receipt</button>
+        </div>
+      </div>
+
+      <details class="section disclosure" data-panel-section="audit">
+        <summary><span>Source manifest</span><small>5 inputs</small></summary>
+        <ul class="source-list">
+          <li><i></i><span>NOAA-style wind, ice, precipitation, storm path, and freeze-thaw normals</span></li>
+          <li><i></i><span>Landsat/Sentinel/NAIP-style canopy, pole lean, crossarm, and right-of-way proxies</span></li>
+          <li><i></i><span>FEMA-style flood exposure plus terrain, slope, drainage, and soil moisture proxies</span></li>
+          <li><i></i><span>Open basemaps, road access, salt exposure, critical facilities, and outage consequence proxies</span></li>
+          <li><i></i><span>Moderated community and crew reports kept outside the model score</span></li>
+        </ul>
+      </details>
+    </aside>
+
+    <main class="panel field screen-panel" data-screen-panel="work" aria-label="Evidence field and worklist">
+      <div class="field-wrap">
+        <div class="field-title">
+          <div>
+            <h2>Evidence field</h2>
+            <p id="fieldSubtitle">Michigan-only map with statewide pole work packets, receipt-level evidence, and ranked crew priorities.</p>
+            <label for="residentSearch">Find my area</label>
+            <div class="resident-search">
+              <input id="residentSearch" type="search" autocomplete="off" placeholder="County, city, or address">
+              <button class="action-btn secondary" id="residentSearchButton" type="button">Find</button>
+            </div>
+            <span class="search-status" id="searchStatus">Search a Michigan county or city to focus the map and receipt.</span>
+            <div class="field-meta" id="fieldMeta"></div>
+            <div class="scenario-card" id="stormScenario" aria-live="polite"></div>
+          </div>
+          <div class="field-tools">
+            <div class="legend">
+              <span><i class="dot" style="background: var(--red)"></i>Critical</span>
+              <span><i class="dot" style="background: var(--amber)"></i>High</span>
+              <span><i class="dot" style="background: #d9c537"></i>Elevated</span>
+              <span><i class="dot" style="background: var(--green)"></i>Routine</span>
+              <span><i class="dot" style="background: var(--blue)"></i>Packet</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-visuals">
+          <div class="map-shell" id="mapShell">
+            <div id="realMap" aria-label="Real map of Michigan pole work packets"></div>
+            <svg id="map" viewBox="0 0 760 430" role="img" aria-label="Michigan utility pole risk field"></svg>
+            <div class="map-tip" id="mapTip"></div>
+          </div>
+        </div>
+
+        <section class="worklist" aria-label="Prioritized worklist">
+          <div class="worklist-head">
+            <div>
+              <strong>Prioritized crew packets</strong>
+              <span id="worklistSummary"></span>
+            </div>
+            <span id="cycleSummary"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Receipt</th>
+                  <th>County</th>
+                  <th>Risk</th>
+                  <th>Confidence</th>
+                  <th>Tier</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="workRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <aside class="panel receipt screen-panel" data-screen-panel="receipt" aria-label="Selected risk receipt">
+      <div class="receipt-header">
+        <h2>Selected receipt</h2>
+        <span class="receipt-status" id="receiptStatus"></span>
+      </div>
+      <div class="receipt-shell" id="receiptShell"></div>
+    </aside>
+  </div>
+
+  <nav class="bottom-tabs" id="bottomTabs" aria-label="Mobile screens"></nav>
+
+  <div class="command-overlay" id="commandOverlay" hidden>
+    <div class="command-dialog" role="dialog" aria-modal="true" aria-labelledby="commandTitle">
+      <div class="command-head">
+        <h2 id="commandTitle">Command palette</h2>
+        <input class="command-input" id="commandSearch" type="text" autocomplete="off" placeholder="Search screens and actions">
+      </div>
+      <div class="command-list" id="commandList" role="listbox" aria-label="Available commands"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var MAP_BOUNDS = { minLon: -90.45, maxLon: -82.05, minLat: 41.65, maxLat: 48.35 };
+      var MICHIGAN_CENTER = [44.55, -85.65];
+      var MICHIGAN_LATLNG_BOUNDS = [[MAP_BOUNDS.minLat, MAP_BOUNDS.minLon], [MAP_BOUNDS.maxLat, MAP_BOUNDS.maxLon]];
+      var MICHIGAN_PADDED_BOUNDS = [[41.28, -90.9], [48.72, -81.65]];
+      var WAYNE_MAP_BOUNDS = { minLon: -83.58, maxLon: -82.82, minLat: 42.02, maxLat: 42.47 };
+      var WAYNE_CENTER = [42.27, -83.20];
+      var WAYNE_LATLNG_BOUNDS = [[WAYNE_MAP_BOUNDS.minLat, WAYNE_MAP_BOUNDS.minLon], [WAYNE_MAP_BOUNDS.maxLat, WAYNE_MAP_BOUNDS.maxLon]];
+
+      var COUNTY_AREAS = [
+        "Alcona|44.68|-83.59|0.42|north",
+        "Alger|46.41|-86.65|0.52|up",
+        "Allegan|42.53|-85.85|0.38|west",
+        "Alpena|45.06|-83.43|0.42|lake",
+        "Antrim|44.98|-85.21|0.36|north",
+        "Arenac|43.98|-83.84|0.34|lake",
+        "Baraga|46.80|-88.48|0.58|up",
+        "Barry|42.65|-85.29|0.34|farm",
+        "Bay|43.60|-83.89|0.32|lake",
+        "Benzie|44.62|-86.10|0.34|lake",
+        "Berrien|42.10|-86.48|0.34|lake",
+        "Branch|41.92|-85.06|0.30|farm",
+        "Calhoun|42.25|-85.01|0.34|urban",
+        "Cass|41.91|-86.01|0.32|farm",
+        "Charlevoix|45.31|-85.26|0.34|lake",
+        "Cheboygan|45.65|-84.47|0.42|north",
+        "Chippewa|46.49|-84.35|0.58|up",
+        "Clare|43.99|-84.85|0.34|north",
+        "Clinton|42.95|-84.60|0.32|farm",
+        "Crawford|44.68|-84.61|0.42|north",
+        "Delta|45.78|-87.08|0.54|up",
+        "Dickinson|45.99|-87.87|0.50|up",
+        "Eaton|42.59|-84.84|0.32|urban",
+        "Emmet|45.48|-84.92|0.36|lake",
+        "Genesee|43.02|-83.70|0.32|urban",
+        "Gladwin|43.99|-84.39|0.34|north",
+        "Gogebic|46.45|-89.70|0.58|up",
+        "Grand Traverse|44.76|-85.62|0.34|lake",
+        "Gratiot|43.29|-84.60|0.34|farm",
+        "Hillsdale|41.92|-84.63|0.30|farm",
+        "Houghton|47.12|-88.57|0.56|up",
+        "Huron|43.80|-83.00|0.36|thumb",
+        "Ingham|42.64|-84.55|0.32|urban",
+        "Ionia|42.94|-85.07|0.34|farm",
+        "Iosco|44.31|-83.64|0.36|lake",
+        "Iron|46.22|-88.53|0.54|up",
+        "Isabella|43.64|-84.84|0.34|farm",
+        "Jackson|42.25|-84.40|0.34|urban",
+        "Kalamazoo|42.29|-85.59|0.32|urban",
+        "Kalkaska|44.69|-85.09|0.38|north",
+        "Kent|43.00|-85.55|0.36|urban",
+        "Keweenaw|47.47|-88.16|0.42|up",
+        "Lake|43.99|-85.80|0.34|north",
+        "Lapeer|43.05|-83.31|0.32|farm",
+        "Leelanau|45.03|-85.76|0.30|lake",
+        "Lenawee|41.90|-84.05|0.32|farm",
+        "Livingston|42.60|-83.92|0.34|urban",
+        "Luce|46.47|-85.52|0.54|up",
+        "Mackinac|45.90|-84.73|0.48|up",
+        "Macomb|42.67|-82.91|0.28|urban",
+        "Manistee|44.24|-86.32|0.34|lake",
+        "Marquette|46.55|-87.40|0.60|up",
+        "Mason|44.02|-86.34|0.34|lake",
+        "Mecosta|43.64|-85.32|0.34|north",
+        "Menominee|45.58|-87.56|0.48|up",
+        "Midland|43.62|-84.23|0.34|urban",
+        "Missaukee|44.34|-85.09|0.34|north",
+        "Monroe|41.93|-83.50|0.32|lake",
+        "Montcalm|43.31|-85.14|0.34|farm",
+        "Montmorency|45.03|-84.13|0.40|north",
+        "Muskegon|43.29|-86.15|0.34|lake",
+        "Newaygo|43.55|-85.80|0.36|north",
+        "Oakland|42.66|-83.38|0.34|urban",
+        "Oceana|43.64|-86.29|0.34|lake",
+        "Ogemaw|44.33|-84.13|0.36|north",
+        "Ontonagon|46.87|-89.31|0.58|up",
+        "Osceola|43.99|-85.33|0.34|north",
+        "Oscoda|44.68|-84.13|0.40|north",
+        "Otsego|45.02|-84.67|0.38|north",
+        "Ottawa|42.95|-86.05|0.34|lake",
+        "Presque Isle|45.38|-83.81|0.38|lake",
+        "Roscommon|44.34|-84.61|0.36|north",
+        "Saginaw|43.42|-84.00|0.34|urban",
+        "St. Clair|42.93|-82.67|0.34|lake",
+        "St. Joseph|41.92|-85.53|0.32|farm",
+        "Sanilac|43.42|-82.83|0.36|thumb",
+        "Schoolcraft|46.20|-86.20|0.54|up",
+        "Shiawassee|42.95|-84.15|0.34|farm",
+        "Tuscola|43.49|-83.40|0.36|thumb",
+        "Van Buren|42.22|-86.02|0.34|lake",
+        "Washtenaw|42.25|-83.84|0.34|urban",
+        "Wayne|42.28|-83.26|0.34|urban",
+        "Wexford|44.33|-85.58|0.34|north"
+      ].map(function (row) {
+        var p = row.split("|");
+        return { name: p[0], lat: Number(p[1]), lon: Number(p[2]), spread: Number(p[3]), zone: p[4] };
+      });
+
+      var COUNTIES = COUNTY_AREAS.map(function (c) { return c.name; });
+      var COUNTY_LOOKUP = {};
+      COUNTY_AREAS.forEach(function (c) { COUNTY_LOOKUP[c.name] = c; });
+      var POLE_COUNT = COUNTIES.length * 48;
+      var PUBLIC_PROOF_COUNTY = "Wayne";
+      var WAYNE_PUBLIC_PROOF = {
+        county: "Wayne",
+        label: "Wayne County public proof slice",
+        verifiedAt: "2026-05-16",
+        disclosure: "Statewide pole inventory is synthetic for demo coverage. Wayne County demonstrates the same receipt pipeline with real public layers; DTE asset, outage, and inspection data would convert this into a production prioritization layer.",
+        layers: [
+          {
+            key: "noaa",
+            name: "NOAA storm history",
+            value: "75 Wayne County storm records from 2023 through Jan 2026",
+            detail: "Includes thunderstorm wind, hail, tornado, flash flood, flood, ice/snow, winter weather, and high-wind records from NCEI Storm Events bulk CSV.",
+            source: "NCEI Storm Events"
+          },
+          {
+            key: "fema",
+            name: "FEMA flood risk",
+            value: "4,397 NFHL flood-hazard zone features intersect the Wayne bbox",
+            detail: "Queried FEMA NFHL MapServer layer 28, Flood Hazard Zones, over the Detroit/Wayne working envelope.",
+            source: "FEMA NFHL"
+          },
+          {
+            key: "ssurgo",
+            name: "USDA soil/drainage",
+            value: "SSURGO area MI163, Wayne County, Michigan",
+            detail: "Drainage table includes 313 somewhat poorly drained, 83 poorly drained, 54 hydric poorly drained, and 21 hydric very poorly drained components.",
+            source: "USDA NRCS Soil Data Access"
+          },
+          {
+            key: "usgs",
+            name: "USGS elevation/slope",
+            value: "3DEP 1/3 arc-second GeoTIFF tiles n43w083 and n43w084",
+            detail: "The National Map query returned two public 3DEP elevation tiles covering the Wayne proof envelope.",
+            source: "USGS 3DEP"
+          },
+          {
+            key: "imagery",
+            name: "Vegetation imagery",
+            value: "Landsat/NAIP/Sentinel public imagery source stack",
+            detail: "The demo uses a canopy/ROW proxy tied to public imagery sources; production would compute parcel-level NDVI/canopy distance directly.",
+            source: "USGS Landsat, USDA NAIP, Copernicus Sentinel"
+          },
+          {
+            key: "osm",
+            name: "OSM/open infrastructure",
+            value: "49,058 OSM power pole/tower/line features in the Wayne bbox",
+            detail: "Overpass count returned 46,530 nodes and 2,528 ways; used as open infrastructure context, not DTE asset truth.",
+            source: "OpenStreetMap / Overpass"
+          }
+        ]
+      };
+
+      var STATIONS = [
+        ["Detroit Metro", -83.3308, 42.2313],
+        ["Detroit City", -83.0100, 42.4093],
+        ["Lansing", -84.5994, 42.7710],
+        ["Flint", -83.7436, 42.9656],
+        ["Ann Arbor", -83.7456, 42.2230],
+        ["Pontiac", -83.4180, 42.6655],
+        ["Saginaw", -83.9333, 43.4333],
+        ["St. Clair", -82.4900, 42.8200],
+        ["Grand Rapids", -85.6681, 42.9634],
+        ["Muskegon", -86.2389, 43.2342],
+        ["Kalamazoo", -85.5872, 42.2917],
+        ["Traverse City", -85.6206, 44.7631],
+        ["Gaylord", -84.6748, 45.0275],
+        ["Alpena", -83.4327, 45.0617],
+        ["Sault Ste. Marie", -84.3472, 46.4953],
+        ["Marquette", -87.3954, 46.5436],
+        ["Escanaba", -87.0646, 45.7452],
+        ["Houghton", -88.5690, 47.1211],
+        ["Ironwood", -90.1710, 46.4547]
+      ];
+
+      var STREET_CONTEXTS = {
+        "Wayne": [
+          { label: "Woodward Avenue, Detroit", lat: 42.33155, lon: -83.04581, heading: 22 },
+          { label: "Michigan Avenue, Dearborn", lat: 42.32226, lon: -83.17631, heading: 88 },
+          { label: "Plymouth Road, Livonia", lat: 42.36837, lon: -83.35271, heading: 92 }
+        ],
+        "Oakland": [
+          { label: "Woodward Avenue, Royal Oak", lat: 42.48916, lon: -83.14465, heading: 18 },
+          { label: "Telegraph Road, Southfield", lat: 42.47570, lon: -83.28536, heading: 3 },
+          { label: "Woodward Loop, Pontiac", lat: 42.63892, lon: -83.29105, heading: 212 }
+        ],
+        "Macomb": [
+          { label: "Hall Road, Sterling Heights", lat: 42.62624, lon: -83.03039, heading: 88 },
+          { label: "Gratiot Avenue, Mount Clemens", lat: 42.59859, lon: -82.87710, heading: 29 },
+          { label: "Van Dyke Avenue, Warren", lat: 42.51480, lon: -83.02832, heading: 0 }
+        ],
+        "Washtenaw": [
+          { label: "Main Street, Ann Arbor", lat: 42.28144, lon: -83.74800, heading: 181 },
+          { label: "Michigan Avenue, Ypsilanti", lat: 42.24120, lon: -83.61305, heading: 92 },
+          { label: "Michigan Avenue, Saline", lat: 42.16602, lon: -83.78164, heading: 87 }
+        ],
+        "Livingston": [
+          { label: "Grand River Avenue, Howell", lat: 42.60740, lon: -83.92932, heading: 86 },
+          { label: "Main Street, Brighton", lat: 42.52970, lon: -83.78022, heading: 91 },
+          { label: "Main Street, Pinckney", lat: 42.45636, lon: -83.94639, heading: 96 }
+        ],
+        "St. Clair": [
+          { label: "Military Street, Port Huron", lat: 42.97855, lon: -82.42491, heading: 4 },
+          { label: "Busha Highway, Marysville", lat: 42.91242, lon: -82.48698, heading: 175 },
+          { label: "Water Street, Marine City", lat: 42.71902, lon: -82.49233, heading: 180 }
+        ],
+        "Lapeer": [
+          { label: "Nepessing Street, Lapeer", lat: 43.05133, lon: -83.31883, heading: 92 },
+          { label: "Cedar Street, Imlay City", lat: 43.02494, lon: -83.07772, heading: 181 },
+          { label: "Main Street, Almont", lat: 42.92096, lon: -83.04493, heading: 179 }
+        ],
+        "Genesee": [
+          { label: "Saginaw Street, Flint", lat: 43.01252, lon: -83.68746, heading: 181 },
+          { label: "Saginaw Street, Grand Blanc", lat: 42.92780, lon: -83.62995, heading: 178 },
+          { label: "Main Street, Davison", lat: 43.03495, lon: -83.51801, heading: 88 }
+        ],
+        "Monroe": [
+          { label: "Front Street, Monroe", lat: 41.91656, lon: -83.39771, heading: 91 },
+          { label: "Tecumseh Street, Dundee", lat: 41.95720, lon: -83.65996, heading: 270 },
+          { label: "Monroe Street, Carleton", lat: 42.05988, lon: -83.39077, heading: 90 }
+        ],
+        "Ingham": [
+          { label: "Michigan Avenue, Lansing", lat: 42.73356, lon: -84.55100, heading: 91 },
+          { label: "Grand River Avenue, East Lansing", lat: 42.73688, lon: -84.48370, heading: 91 },
+          { label: "Jefferson Street, Mason", lat: 42.57920, lon: -84.44359, heading: 180 }
+        ],
+        "Saginaw": [
+          { label: "Washington Avenue, Saginaw", lat: 43.41947, lon: -83.95081, heading: 180 },
+          { label: "Bay Road, Saginaw Township", lat: 43.45470, lon: -83.97563, heading: 178 },
+          { label: "Main Street, Frankenmuth", lat: 43.33118, lon: -83.73807, heading: 92 }
+        ],
+        "Lenawee": [
+          { label: "Main Street, Adrian", lat: 41.89755, lon: -84.03717, heading: 92 },
+          { label: "Chicago Boulevard, Tecumseh", lat: 42.00393, lon: -83.94488, heading: 91 },
+          { label: "Adrian Street, Blissfield", lat: 41.83255, lon: -83.86246, heading: 181 }
+        ]
+      };
+
+      var TIERS = [
+        { id: "all", label: "All", min: 0, color: "#247553" },
+        { id: "critical", label: "Critical", min: 0.72, color: "#bd392f" },
+        { id: "high", label: "High", min: 0.48, color: "#b66f1d" },
+        { id: "elevated", label: "Elevated", min: 0.26, color: "#d9c537" }
+      ];
+
+      var SCREENS = [
+        { id: "work", label: "Field", title: "Michigan field prioritization", blurb: "Risk-based work planning: where crews should look first, what they should look for, and what action changes next week's schedule.", primary: "Export work packets CSV", command: "csv" },
+        { id: "receipt", label: "Receipt", title: "Selected pole receipt", blurb: "Pole-level explanation that turns public/synthetic inputs into an action, confidence trail, guardrails, and source manifest.", primary: "Export selected receipt JSON", command: "json" }
+      ];
+
+      var state = {
+        screen: new URLSearchParams(window.location.search).get("screen") || "work",
+        objective: "outage",
+        tier: "all",
+        county: "All counties",
+        minRisk: 0,
+        budget: 110,
+        confidenceGuard: true,
+        communityOverlay: true,
+        explainability: true,
+        theme: "light",
+        density: "comfortable",
+        accent: "blue",
+        showAlerts: false,
+        stormMode: false,
+        demoMode: false,
+        searchQuery: "",
+        searchStatus: "Search a Michigan county or city to focus the map and receipt.",
+        selectedId: null
+      };
+
+      if (!SCREENS.some(function (screen) { return screen.id === state.screen; })) {
+        state.screen = "work";
+      }
+
+      var els = {
+        topbar: document.querySelector(".topbar"),
+        screenSummary: document.querySelector(".screen-summary"),
+        fieldTitle: document.querySelector(".field-title"),
+        primaryNav: document.getElementById("primaryNav"),
+        bottomTabs: document.getElementById("bottomTabs"),
+        commandOpen: document.getElementById("commandOpen"),
+        commandOverlay: document.getElementById("commandOverlay"),
+        commandSearch: document.getElementById("commandSearch"),
+        commandList: document.getElementById("commandList"),
+        screenKicker: document.getElementById("screenKicker"),
+        screenTitle: document.getElementById("screenTitle"),
+        screenBlurb: document.getElementById("screenBlurb"),
+        screenAction: document.getElementById("screenAction"),
+        overviewScreen: document.getElementById("overviewScreen"),
+        opsBanner: document.getElementById("opsBanner"),
+        kpis: document.getElementById("kpis"),
+        fieldSubtitle: document.getElementById("fieldSubtitle"),
+        objective: document.getElementById("objective"),
+        residentSearch: document.getElementById("residentSearch"),
+        residentSearchButton: document.getElementById("residentSearchButton"),
+        searchStatus: document.getElementById("searchStatus"),
+        tierControls: document.getElementById("tierControls"),
+        county: document.getElementById("county"),
+        minRisk: document.getElementById("minRisk"),
+        minRiskLabel: document.getElementById("minRiskLabel"),
+        budget: document.getElementById("budget"),
+        budgetLabel: document.getElementById("budgetLabel"),
+        confidenceGuard: document.getElementById("confidenceGuard"),
+        communityOverlay: document.getElementById("communityOverlay"),
+        explainability: document.getElementById("explainability"),
+        themeControls: document.getElementById("themeControls"),
+        densityControls: document.getElementById("densityControls"),
+        accentControls: document.getElementById("accentControls"),
+        showAlerts: document.getElementById("showAlerts"),
+        mapShell: document.getElementById("mapShell"),
+        realMap: document.getElementById("realMap"),
+        map: document.getElementById("map"),
+        mapTip: document.getElementById("mapTip"),
+        workRows: document.getElementById("workRows"),
+        worklistSummary: document.getElementById("worklistSummary"),
+        cycleSummary: document.getElementById("cycleSummary"),
+        fieldMeta: document.getElementById("fieldMeta"),
+        stormScenario: document.getElementById("stormScenario"),
+        receiptStatus: document.getElementById("receiptStatus"),
+        receiptShell: document.getElementById("receiptShell"),
+        exportCsv: document.getElementById("exportCsv"),
+        exportJson: document.getElementById("exportJson"),
+        printReceipt: document.getElementById("printReceipt")
+      };
+
+      function rng(seed) {
+        var t = seed + 0x6D2B79F5;
+        return function () {
+          t += 0x6D2B79F5;
+          var r = Math.imul(t ^ t >>> 15, 1 | t);
+          r ^= r + Math.imul(r ^ r >>> 7, 61 | r);
+          return ((r ^ r >>> 14) >>> 0) / 4294967296;
+        };
+      }
+
+      var random = rng(20260516);
+
+      function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+      function round(v, n) {
+        var p = Math.pow(10, n || 0);
+        return Math.round(v * p) / p;
+      }
+      function pct(v) { return Math.round(v * 100) + "%"; }
+      function pct1(v) { return (v * 100).toFixed(1) + "%"; }
+      function money(v) { return "$" + Math.round(v).toLocaleString("en-US"); }
+      function esc(s) {
+        return String(s).replace(/[&<>"]/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c];
+        });
+      }
+      function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+      function hashText(s) {
+        var h = 5381;
+        for (var i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
+        return "PP-" + (h >>> 0).toString(16).toUpperCase().padStart(8, "0");
+      }
+
+      function cssVar(name, fallback) {
+        var value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || fallback;
+      }
+
+      var COLOR_HEX_CACHE = {};
+      function hexForColor(color, fallback) {
+        var key = color || fallback || "fallback";
+        if (COLOR_HEX_CACHE[key]) return COLOR_HEX_CACHE[key];
+        var span = document.createElement("span");
+        span.style.color = color || fallback;
+        document.body.appendChild(span);
+        var rgb = getComputedStyle(span).color.match(/\d+/g) || [55, 179, 127];
+        span.remove();
+        COLOR_HEX_CACHE[key] = rgb.slice(0, 3).reduce(function (sum, v, i) {
+          return sum + (Number(v) << (16 - i * 8));
+        }, 0);
+        return COLOR_HEX_CACHE[key];
+      }
+
+      function countyAreaFor(county) {
+        return COUNTY_LOOKUP[county] || COUNTY_AREAS[0];
+      }
+
+      function lonForCounty(i, jitter) {
+        var area = COUNTY_AREAS[i % COUNTY_AREAS.length];
+        return clamp(area.lon + (jitter - 0.5) * area.spread, MAP_BOUNDS.minLon, MAP_BOUNDS.maxLon);
+      }
+
+      function latForCounty(i, jitter) {
+        var area = COUNTY_AREAS[i % COUNTY_AREAS.length];
+        return clamp(area.lat + (jitter - 0.5) * area.spread * 0.72, MAP_BOUNDS.minLat, MAP_BOUNDS.maxLat);
+      }
+
+      function streetContextFor(county, sequence) {
+        var choices = STREET_CONTEXTS[county];
+        if (!choices) {
+          var area = countyAreaFor(county);
+          var drift = (sequence % 5) - 2;
+          return {
+            label: "Main road, " + county + " County",
+            lat: round(area.lat + drift * 0.0024, 5),
+            lon: round(area.lon - drift * 0.0028, 5),
+            heading: (sequence * 37) % 360
+          };
+        }
+        var base = choices[sequence % choices.length];
+        return {
+          label: base.label,
+          lat: base.lat,
+          lon: base.lon,
+          heading: base.heading
+        };
+      }
+
+      function nearestStation(lon, lat) {
+        var best = STATIONS[0], dist = Infinity;
+        STATIONS.forEach(function (s) {
+          var d = Math.pow(s[1] - lon, 2) + Math.pow(s[2] - lat, 2);
+          if (d < dist) { best = s; dist = d; }
+        });
+        return best[0];
+      }
+
+      function tierFor(risk) {
+        if (risk >= 0.72) return "critical";
+        if (risk >= 0.48) return "high";
+        if (risk >= 0.26) return "elevated";
+        return "routine";
+      }
+
+      function actionFor(p) {
+        var top = p.drivers[0].key;
+        if (p.risk >= 0.78 && (top === "lean" || top === "rot")) return "Reinforce / replace";
+        if (top === "vegetation") return "Tree trim";
+        if (top === "flood" || top === "soil") return "Inspect base";
+        if (top === "criticality") return "Protect circuit";
+        if (p.risk >= 0.50) return "Field inspect";
+        return "Monitor";
+      }
+
+      function publicProofFactors(county, lat, lon) {
+        if (county !== PUBLIC_PROOF_COUNTY) return null;
+        var detroitRiverBand = lon > -83.13 || lat < 42.20;
+        var urbanCore = lat > 42.25 && lat < 42.43 && lon > -83.30 && lon < -82.92;
+        return {
+          vegetation: urbanCore ? 0.70 : 0.58,
+          wind: 0.86,
+          flood: detroitRiverBand ? 0.80 : 0.58,
+          soil: detroitRiverBand ? 0.78 : 0.64,
+          access: urbanCore ? 0.42 : 0.58,
+          criticality: urbanCore ? 0.92 : 0.76
+        };
+      }
+
+      function driverSource(key, county) {
+        if (county === PUBLIC_PROOF_COUNTY) {
+          return {
+            vegetation: "Landsat/NAIP/Sentinel public imagery canopy and ROW proxy",
+            lean: "synthetic structure proxy; DTE inspection validation required",
+            wind: "NOAA NCEI Storm Events for Wayne County, 2023-Jan 2026",
+            flood: "FEMA NFHL Flood Hazard Zones intersecting the Wayne proof bbox",
+            soil: "USDA NRCS SSURGO MI163 drainage and hydric component table",
+            criticality: "Open basemap density and critical-load proxy for Detroit/Wayne",
+            access: "OSM road and power-infrastructure context from the Wayne bbox"
+          }[key];
+        }
+        return {
+          vegetation: "image-derived NDVI / right-of-way proxy",
+          lean: "image-derived geometry proxy",
+          wind: "NOAA-style climate normals",
+          flood: "FEMA-style flood / drainage proxy",
+          soil: "soil drainage / freeze-thaw proxy",
+          criticality: "critical load / customer-density proxy",
+          access: "road access / work-zone proxy"
+        }[key];
+      }
+
+      function makeDrivers(features, county) {
+        var rows = [
+          { key: "vegetation", label: "Canopy contact growth", source: driverSource("vegetation", county), weight: features.vegetation * 0.30 },
+          { key: "lean", label: "Pole lean and structure signal", source: driverSource("lean", county), weight: features.lean * 0.27 },
+          { key: "wind", label: "High wind and ice exposure", source: driverSource("wind", county), weight: features.wind * 0.22 },
+          { key: "flood", label: "Flood and drainage exposure", source: driverSource("flood", county), weight: features.flood * 0.19 },
+          { key: "soil", label: "Soil moisture and base decay", source: driverSource("soil", county), weight: features.soil * 0.17 },
+          { key: "criticality", label: "Outage consequence criticality", source: driverSource("criticality", county), weight: features.criticality * 0.16 },
+          { key: "access", label: "Crew access friction", source: driverSource("access", county), weight: features.access * 0.11 }
+        ];
+        rows.sort(function (a, b) { return b.weight - a.weight; });
+        return rows;
+      }
+
+      function genPoles() {
+        var rows = [];
+        for (var i = 0; i < POLE_COUNT; i++) {
+          var countyIndex = i % COUNTIES.length;
+          var county = COUNTIES[countyIndex];
+          var area = COUNTY_AREAS[countyIndex];
+          var zoneRisk = { urban: 0.10, up: 0.11, lake: 0.08, north: 0.07, thumb: 0.08, west: 0.05, farm: 0.04 }[area.zone] || 0.05;
+          var countyRisk = zoneRisk + (countyIndex % 5) * 0.018;
+          var lon = lonForCounty(countyIndex, random());
+          var lat = latForCounty(countyIndex, random());
+          var age = Math.pow(random(), 0.75);
+          var wooded = area.zone === "north" || area.zone === "up" || area.zone === "lake";
+          var vegetation = clamp(random() * 0.62 + (wooded ? 0.20 : 0) + random() * 0.12, 0, 1);
+          var lean = clamp(Math.pow(random(), 2.1) + (random() > 0.94 ? 0.55 : 0), 0, 1);
+          var wind = clamp(random() * 0.52 + (lat > 44.3 ? 0.18 : 0) + (area.zone === "up" ? 0.18 : 0) + (area.zone === "lake" || area.zone === "thumb" ? 0.10 : 0), 0, 1);
+          var flood = clamp(Math.pow(random(), 1.6) + (area.zone === "lake" || county === "Monroe" || county === "Bay" || county === "St. Clair" ? 0.18 : 0), 0, 1);
+          var soil = clamp(random() * 0.72 + flood * 0.22, 0, 1);
+          var access = clamp(random() * 0.66 + (area.zone === "up" || area.zone === "north" ? 0.18 : 0) + (area.zone === "urban" ? 0.06 : 0), 0, 1);
+          var criticality = clamp(Math.pow(random(), 0.6) + (area.zone === "urban" ? 0.22 : area.zone === "west" ? 0.08 : 0), 0, 1);
+          var proofFactors = publicProofFactors(county, lat, lon);
+          if (proofFactors) {
+            vegetation = clamp(vegetation * 0.58 + proofFactors.vegetation * 0.42, 0, 1);
+            wind = clamp(wind * 0.45 + proofFactors.wind * 0.55, 0, 1);
+            flood = clamp(flood * 0.48 + proofFactors.flood * 0.52, 0, 1);
+            soil = clamp(soil * 0.50 + proofFactors.soil * 0.50, 0, 1);
+            access = clamp(access * 0.60 + proofFactors.access * 0.40, 0, 1);
+            criticality = clamp(criticality * 0.54 + proofFactors.criticality * 0.46, 0, 1);
+          }
+          var report = random() > 0.955 ? (random() > 0.55 ? "verified" : "pending") : "none";
+          var sourceCompleteness = 3 + (random() > 0.25 ? 1 : 0) + (random() > 0.45 ? 1 : 0);
+          if (proofFactors) sourceCompleteness = 5;
+          var confidence = clamp(0.50 + sourceCompleteness * 0.082 + (report === "verified" ? 0.08 : 0) + (proofFactors ? 0.05 : 0) - (lean > 0.8 ? 0.04 : 0), 0.52, 0.96);
+          var raw = -3.15 + countyRisk +
+            vegetation * 1.45 + lean * 1.55 + wind * 1.00 +
+            flood * 0.90 + soil * 0.75 + age * 0.55 + criticality * 0.35;
+          var risk = clamp(sigmoid(raw), 0.02, 0.97);
+          if (report === "verified") risk = clamp(risk + 0.10, 0.02, 0.99);
+          var features = { vegetation: vegetation, lean: lean, wind: wind, flood: flood, soil: soil, access: access, criticality: criticality };
+          var drivers = makeDrivers(features, county);
+          var segment = "C" + String(1 + countyIndex).padStart(2, "0") + "-S" + (1 + Math.floor(i / COUNTIES.length) % 8);
+          var streetContext = streetContextFor(county, Math.floor(i / COUNTIES.length) + countyIndex);
+          var p = {
+            id: "PP" + String(i + 1).padStart(5, "0"),
+            county: county,
+            lon: round(lon, 5),
+            lat: round(lat, 5),
+            streetContext: streetContext,
+            segment: segment,
+            station: nearestStation(lon, lat),
+            risk: round(risk, 4),
+            confidence: round(confidence, 4),
+            age: round(age, 3),
+            sourceCompleteness: sourceCompleteness,
+            dataProof: proofFactors ? "real" : (confidence < 0.67 || sourceCompleteness < 4 ? "validation" : "synthetic"),
+            publicProofCounty: !!proofFactors,
+            features: {
+              vegetation: round(vegetation, 3),
+              lean: round(lean, 3),
+              wind: round(wind, 3),
+              flood: round(flood, 3),
+              soil: round(soil, 3),
+              access: round(access, 3),
+              criticality: round(criticality, 3)
+            },
+            report: report,
+            criticality: round(criticality, 3),
+            outageMinutes: Math.round(110 + risk * criticality * 980 + random() * 150),
+            truckRollCost: Math.round(185 + random() * 120 + access * 190),
+            drivers: drivers
+          };
+          p.tier = tierFor(p.risk);
+          p.action = actionFor(p);
+          p.reduction = round(clamp(p.risk * (0.22 + drivers[0].weight * 0.72), 0.05, 0.46), 3);
+          p.receipt = "R-" + p.id.slice(2) + "-" + segment.replace("-", "");
+          p.hash = hashText(JSON.stringify({
+            id: p.id,
+            risk: p.risk,
+            confidence: p.confidence,
+            action: p.action,
+            drivers: p.drivers.slice(0, 3).map(function (d) { return [d.key, round(d.weight, 4)]; })
+          }));
+          rows.push(p);
+        }
+        return rows;
+      }
+
+      var POLES = genPoles();
+
+      function priority(p) {
+        var reportBoost = p.report === "verified" ? 0.10 : (p.report === "pending" ? 0.04 : 0);
+        var guard = state.confidenceGuard && p.confidence < 0.67 && p.risk < 0.74 && p.report !== "verified" ? -0.15 : 0;
+        var score = p.risk * 0.62 + p.criticality * 0.15 + p.confidence * 0.10 + reportBoost + guard;
+        if (state.objective === "audit") score = p.risk * 0.50 + p.confidence * 0.28 + reportBoost + guard;
+        if (state.objective === "crew") score = p.risk * 0.54 + (1 - p.truckRollCost / 500) * 0.20 + p.confidence * 0.12 + reportBoost + guard;
+        return clamp(score, 0, 1);
+      }
+
+      function filtered() {
+        var tierMin = TIERS.find(function (t) { return t.id === state.tier; }).min;
+        return POLES.filter(function (p) {
+          if (state.county !== "All counties" && p.county !== state.county) return false;
+          if (p.risk < state.minRisk / 100) return false;
+          if (p.risk < tierMin) return false;
+          if (!state.explainability && p.sourceCompleteness < 4) return false;
+          return true;
+        }).sort(function (a, b) {
+          return priority(b) - priority(a);
+        });
+      }
+
+      function packetRows() {
+        return filtered().slice(0, state.budget);
+      }
+
+      function selectFirstIfNeeded(rows) {
+        if (state.selectedId && rows.some(function (p) { return p.id === state.selectedId; })) return;
+        state.selectedId = rows[0] ? rows[0].id : null;
+      }
+
+      function selectedPole() {
+        return POLES.find(function (p) { return p.id === state.selectedId; });
+      }
+
+      function normalizeSearch(s) {
+        return String(s || "").toLowerCase().replace(/[^a-z0-9., -]/g, " ").replace(/\s+/g, " ").trim();
+      }
+
+      function isMichiganCoord(lat, lon) {
+        return lat >= MAP_BOUNDS.minLat && lat <= MAP_BOUNDS.maxLat && lon >= MAP_BOUNDS.minLon && lon <= MAP_BOUNDS.maxLon;
+      }
+
+      function parseCoordinateSearch(query) {
+        var nums = query.match(/-?\d+(?:\.\d+)?/g);
+        if (!nums || nums.length < 2) return null;
+        var a = Number(nums[0]);
+        var b = Number(nums[1]);
+        if (isMichiganCoord(a, b)) return { lat: a, lon: b };
+        if (isMichiganCoord(b, a)) return { lat: b, lon: a };
+        return null;
+      }
+
+      function distanceSq(a, b) {
+        return Math.pow(a.lat - b.lat, 2) + Math.pow((a.lon - b.lon) * 0.72, 2);
+      }
+
+      function nearestPoleTo(lat, lon, rows) {
+        var here = { lat: lat, lon: lon };
+        var list = rows && rows.length ? rows : POLES;
+        return list.reduce(function (best, p) {
+          var d = distanceSq(here, p);
+          return !best || d < best.dist ? { pole: p, dist: d } : best;
+        }, null).pole;
+      }
+
+      function nearestCountyForCoord(lat, lon) {
+        var here = { lat: lat, lon: lon };
+        return COUNTY_AREAS.reduce(function (best, area) {
+          var d = distanceSq(here, area);
+          return !best || d < best.dist ? { county: area.name, dist: d } : best;
+        }, null).county;
+      }
+
+      var CITY_ALIASES = {
+        "detroit": "Wayne",
+        "dearborn": "Wayne",
+        "livonia": "Wayne",
+        "royal oak": "Oakland",
+        "southfield": "Oakland",
+        "pontiac": "Oakland",
+        "sterling heights": "Macomb",
+        "warren": "Macomb",
+        "ann arbor": "Washtenaw",
+        "ypsilanti": "Washtenaw",
+        "brighton": "Livingston",
+        "port huron": "St. Clair",
+        "flint": "Genesee",
+        "monroe": "Monroe",
+        "lansing": "Ingham",
+        "east lansing": "Ingham",
+        "saginaw": "Saginaw",
+        "grand rapids": "Kent",
+        "kalamazoo": "Kalamazoo",
+        "muskegon": "Muskegon",
+        "traverse city": "Grand Traverse",
+        "marquette": "Marquette",
+        "houghton": "Houghton",
+        "sault ste marie": "Chippewa",
+        "sault ste. marie": "Chippewa",
+        "alpena": "Alpena",
+        "jackson": "Jackson",
+        "battle creek": "Calhoun",
+        "bay city": "Bay"
+      };
+
+      var SEARCH_TARGETS = null;
+      function searchTargets() {
+        if (SEARCH_TARGETS) return SEARCH_TARGETS;
+        var targets = [];
+        COUNTIES.forEach(function (county) {
+          targets.push({ key: normalizeSearch(county), label: county + " County", county: county });
+          targets.push({ key: normalizeSearch(county + " county"), label: county + " County", county: county });
+        });
+        Object.keys(CITY_ALIASES).forEach(function (city) {
+          targets.push({ key: normalizeSearch(city), label: city.replace(/\b\w/g, function (c) { return c.toUpperCase(); }), county: CITY_ALIASES[city] });
+        });
+        Object.keys(STREET_CONTEXTS).forEach(function (county) {
+          STREET_CONTEXTS[county].forEach(function (ctx) {
+            var label = ctx.label;
+            targets.push({ key: normalizeSearch(label), label: label, county: county, lat: ctx.lat, lon: ctx.lon });
+            var parts = label.split(",");
+            if (parts[1]) targets.push({ key: normalizeSearch(parts[1]), label: parts[1].trim(), county: county, lat: ctx.lat, lon: ctx.lon });
+          });
+        });
+        STATIONS.forEach(function (s) {
+          targets.push({ key: normalizeSearch(s[0]), label: s[0], county: nearestCountyForCoord(s[2], s[1]), lat: s[2], lon: s[1] });
+        });
+        SEARCH_TARGETS = targets.sort(function (a, b) { return b.key.length - a.key.length; });
+        return SEARCH_TARGETS;
+      }
+
+      function resolveResidentSearch(query) {
+        var q = normalizeSearch(query);
+        if (!q) return null;
+        var coords = parseCoordinateSearch(q);
+        if (coords) {
+          var pole = nearestPoleTo(coords.lat, coords.lon, POLES);
+          return { type: "coordinate", label: coordinateText(pole), county: pole.county, pole: pole };
+        }
+        var target = searchTargets().find(function (candidate) {
+          if (!candidate.key) return false;
+          if (q === candidate.key) return true;
+          if (candidate.key.length < 4) return false;
+          return q.indexOf(candidate.key) !== -1;
+        });
+        if (!target) return null;
+        var rows = POLES.filter(function (p) { return p.county === target.county; });
+        var pole = target.lat && target.lon ? nearestPoleTo(target.lat, target.lon, rows) : rows.slice().sort(function (a, b) {
+          return priority(b) - priority(a);
+        })[0];
+        return { type: "place", label: target.label, county: target.county, pole: pole };
+      }
+
+      function performResidentSearch() {
+        var query = els.residentSearch.value.trim();
+        state.searchQuery = query;
+        if (!query) {
+          state.county = "All counties";
+          state.searchStatus = "Showing all Michigan counties.";
+          setScreen("work");
+          return;
+        }
+        var result = resolveResidentSearch(query);
+        if (!result || !result.pole) {
+          state.searchStatus = "No match yet. Try a Michigan county, city, road, or lat/lon.";
+          renderControls();
+          return;
+        }
+        state.county = result.county;
+        state.tier = "all";
+        state.minRisk = 0;
+        state.selectedId = result.pole.id;
+        state.searchStatus = "Showing " + result.county + " County; selected " + result.pole.receipt + ".";
+        setScreen("work");
+      }
+
+      function screenMeta(id) {
+        return SCREENS.find(function (screen) { return screen.id === id; }) || SCREENS[0];
+      }
+
+      function setScreen(id) {
+        if (!SCREENS.some(function (screen) { return screen.id === id; })) return;
+        state.screen = id;
+        var url = new URL(window.location.href);
+        url.searchParams.set("screen", id);
+        url.searchParams.delete("view");
+        window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+        render();
+      }
+
+      function navMarkup(idPrefix) {
+        return SCREENS.map(function (screen) {
+          var active = state.screen === screen.id;
+          return '<button class="nav-btn ' + (active ? "active" : "") + '" type="button" data-screen-target="' + screen.id +
+            '" aria-current="' + (active ? "page" : "false") + '" id="' + idPrefix + '-' + screen.id + '">' + esc(screen.label) + '</button>';
+        }).join("");
+      }
+
+      function renderNavigation() {
+        els.primaryNav.innerHTML = navMarkup("nav");
+        els.bottomTabs.innerHTML = navMarkup("tab");
+        Array.prototype.forEach.call(document.querySelectorAll("[data-screen-target]"), function (button) {
+          button.addEventListener("click", function () {
+            setScreen(button.getAttribute("data-screen-target"));
+          });
+        });
+      }
+
+      function updateVisiblePanels() {
+        Array.prototype.forEach.call(document.querySelectorAll("[data-screen-panel]"), function (panel) {
+          var screens = panel.getAttribute("data-screen-panel").split(/\s+/);
+          panel.hidden = screens.indexOf(state.screen) === -1;
+        });
+      }
+
+      function renderScreenSummary() {
+        var screen = screenMeta(state.screen);
+        els.screenKicker.textContent = screen.label;
+        var demoWork = state.demoMode && state.screen === "work";
+        els.screenTitle.textContent = demoWork ? "Wayne public proof slice" : screen.title;
+        els.screenBlurb.textContent = demoWork ? "Storm-ready Wayne packets, real public layers, and one receipt path for judges." : screen.blurb;
+        if (els.fieldSubtitle) {
+          els.fieldSubtitle.textContent = demoWork ?
+            "Wayne County proof slice with real public layers, storm scenario, and ranked work packets." :
+            "Michigan-only map with statewide pole work packets, receipt-level evidence, and ranked crew priorities.";
+        }
+        els.screenAction.innerHTML = '<button class="action-btn" type="button" data-command="' + screen.command + '">' + esc(screen.primary) + '</button>';
+      }
+
+      function visibleHeight(el) {
+        if (!el || el.hidden) return 0;
+        var styles = getComputedStyle(el);
+        if (styles.display === "none" || styles.visibility === "hidden") return 0;
+        return el.getBoundingClientRect().height;
+      }
+
+      function updateMapViewportSize() {
+        var bottomTabs = visibleHeight(els.bottomTabs) && getComputedStyle(els.bottomTabs).position === "fixed" ? visibleHeight(els.bottomTabs) : 0;
+        var chrome = visibleHeight(els.topbar) + visibleHeight(els.opsBanner) + visibleHeight(els.kpis) + visibleHeight(els.screenSummary) + bottomTabs;
+        var height = Math.max(360, Math.round(window.innerHeight - chrome));
+        document.documentElement.style.setProperty("--map-screen-h", height + "px");
+      }
+
+      function renderOverview(rows, packets) {
+        var selected = selectedPole();
+        var critical = rows.filter(function (p) { return p.tier === "critical"; }).length;
+        var selectedLabel = selected ? priorityLabel(selected) + " / " + selected.county + " County" : "No selected pole";
+        var nextAction = selected ? selected.action + " within " + (selected.risk >= 0.72 ? "0-14 days" : selected.risk >= 0.48 ? "15-45 days" : "the next cycle") : "Adjust filters";
+        var avoided = packets.reduce(function (sum, p) { return sum + p.outageMinutes * p.reduction; }, 0);
+        els.overviewScreen.innerHTML =
+          '<div class="overview-grid">' +
+            '<div class="overview-lead">' +
+              '<h2>Michigan statewide pole work at a glance.</h2>' +
+              '<p>The current cycle is organized around location, urgency, and a receipt that explains why a pole was selected.</p>' +
+              '<div class="overview-list">' +
+                '<div class="overview-row"><span>Selected</span><strong>' + esc(selectedLabel) + '</strong></div>' +
+                '<div class="overview-row"><span>Next step</span><strong>' + esc(nextAction) + '</strong></div>' +
+                '<div class="overview-row"><span>Pole est.</span><strong>' + (selected ? esc(coordinateText(selected)) : "No location") + '</strong></div>' +
+                '<div class="overview-row"><span>Road anchor</span><strong>' + (selected ? esc(streetContextLabel(selected)) : "No road context") + '</strong></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="overview-card">' +
+              '<h3>This inspection cycle</h3>' +
+              '<div class="overview-list">' +
+                '<div class="overview-row"><span>Packets</span><strong>' + packets.length.toLocaleString("en-US") + ' active work packets</strong></div>' +
+                '<div class="overview-row"><span>Receipts</span><strong>' + rows.length.toLocaleString("en-US") + ' visible receipts</strong></div>' +
+                '<div class="overview-row"><span>Critical</span><strong>' + critical.toLocaleString("en-US") + ' critical receipts in scope</strong></div>' +
+                '<div class="overview-row"><span>Benefit</span><strong>' + Math.round(avoided).toLocaleString("en-US") + ' avoided outage minutes estimated</strong></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      }
+
+      function colorForTier(tier) {
+        return {
+          critical: cssVar("--red", "#ef6358"),
+          high: cssVar("--amber", "#e1a649"),
+          elevated: "#d9c537",
+          routine: cssVar("--green", "#37b37f")
+        }[tier] || cssVar("--green", "#37b37f");
+      }
+
+      function isWayneMapFocus() {
+        return state.county === PUBLIC_PROOF_COUNTY;
+      }
+
+      function activeMapBounds() {
+        return isWayneMapFocus() ? WAYNE_MAP_BOUNDS : MAP_BOUNDS;
+      }
+
+      function normalizedLon(lon) {
+        var bounds = activeMapBounds();
+        return clamp((lon - bounds.minLon) / (bounds.maxLon - bounds.minLon), 0, 1);
+      }
+
+      function normalizedLat(lat) {
+        var bounds = activeMapBounds();
+        return clamp((lat - bounds.minLat) / (bounds.maxLat - bounds.minLat), 0, 1);
+      }
+
+      function projectX(lon) {
+        return 42 + normalizedLon(lon) * 676;
+      }
+
+      function projectY(lat) {
+        return 392 - normalizedLat(lat) * 336;
+      }
+
+      function renderKpis(rows, packets) {
+        var avoided = packets.reduce(function (sum, p) { return sum + p.outageMinutes * p.reduction; }, 0);
+        var dollars = packets.reduce(function (sum, p) {
+          return sum + p.outageMinutes * p.reduction * 18 - p.truckRollCost;
+        }, 0);
+        var auditReady = packets.length ? packets.filter(function (p) {
+          return p.confidence >= 0.72 && p.sourceCompleteness >= 4;
+        }).length / packets.length : 0;
+        var atRisk = rows.filter(function (p) { return p.risk >= 0.48; });
+        var captured = packets.filter(function (p) { return p.risk >= 0.48; });
+        var capture = atRisk.length ? captured.length / atRisk.length : 0;
+        var baseline = rows.length ? Math.min(1, packets.length / rows.length) : 0;
+        var lift = baseline ? capture / baseline : 0;
+        var kpis = state.demoMode ? [
+          ["Wayne proof slice", rows.length.toLocaleString("en-US") + " receipts", "real public-data evidence attached to the demo county", clamp(rows.length / 48, 0.08, 1)],
+          ["Public layers attached", WAYNE_PUBLIC_PROOF.layers.length + " sources", "NOAA, FEMA, USDA, USGS, imagery, and OSM", 1],
+          ["Audit-ready packets", pct(auditReady), "source-complete, high-confidence Wayne receipts", auditReady],
+          ["Estimated benefit", money(dollars), Math.round(avoided).toLocaleString("en-US") + " avoided outage minutes in this cycle", clamp(dollars / 120000, 0.08, 1)],
+          ["Storm-ready crew list", packets.length.toLocaleString("en-US") + " packets", "ranked Wayne packets before the wind scenario", clamp(packets.length / 60, 0.08, 1)]
+        ] : [
+          ["Lift vs age-cycle", lift.toFixed(2) + "x", "same inspection budget, risk-first order", clamp(lift / 5, 0.08, 1)],
+          ["Net benefit / cycle", money(dollars), Math.round(avoided).toLocaleString("en-US") + " avoided outage minutes", clamp(dollars / 1800000, 0.08, 1)],
+          ["Audit-ready receipts", pct(auditReady), "source-complete, high-confidence crew packets", auditReady],
+          ["Receipt coverage", rows.length.toLocaleString("en-US"), "visible pole decisions across Michigan", clamp(rows.length / POLE_COUNT, 0.08, 1)],
+          ["Crew packets", packets.length.toLocaleString("en-US"), "ranked packets ready for dispatch review", clamp(packets.length / 340, 0.08, 1)]
+        ];
+        els.kpis.innerHTML = kpis.map(function (k) {
+          return '<div class="kpi"><span>' + esc(k[0]) + '</span><strong>' + esc(k[1]) +
+            '</strong><em>' + esc(k[2]) + '</em><div class="kpi-meter"><i style="width:' + pct(clamp(k[3], 0, 1)) + '"></i></div></div>';
+        }).join("");
+      }
+
+      function renderControls() {
+        els.tierControls.innerHTML = TIERS.map(function (t) {
+          return '<button class="chip ' + (state.tier === t.id ? "active" : "") +
+            '" data-tier="' + t.id + '">' + esc(t.label) + '</button>';
+        }).join("");
+        Array.prototype.forEach.call(els.tierControls.querySelectorAll("button"), function (b) {
+          b.addEventListener("click", function () {
+            state.tier = b.getAttribute("data-tier");
+            render();
+          });
+        });
+
+        els.county.innerHTML = ['<option>All counties</option>'].concat(COUNTIES.map(function (c) {
+          return '<option>' + esc(c) + '</option>';
+        })).join("");
+        els.county.value = state.county;
+        els.minRisk.value = state.minRisk;
+        els.budget.value = state.budget;
+        els.minRiskLabel.textContent = ">= " + state.minRisk + "%";
+        els.budgetLabel.textContent = state.budget + " packets";
+        els.objective.value = state.objective;
+        els.residentSearch.value = state.searchQuery;
+        els.searchStatus.textContent = state.searchStatus;
+        els.confidenceGuard.checked = state.confidenceGuard;
+        els.communityOverlay.checked = state.communityOverlay;
+        els.explainability.checked = state.explainability;
+      }
+
+      function setDisplayAttrs() {
+        document.documentElement.dataset.screen = state.screen;
+        document.documentElement.dataset.demo = state.demoMode ? "true" : "false";
+        document.documentElement.dataset.theme = state.theme;
+        document.documentElement.dataset.density = state.density;
+        document.documentElement.dataset.accent = state.accent;
+      }
+
+      function buttonGroup(el, items, current, attr, onPick) {
+        el.innerHTML = items.map(function (item) {
+          return '<button class="chip ' + (current === item.id ? "active" : "") +
+            '" data-' + attr + '="' + item.id + '">' + esc(item.label) + '</button>';
+        }).join("");
+        Array.prototype.forEach.call(el.querySelectorAll("button"), function (b) {
+          b.addEventListener("click", function () {
+            onPick(b.getAttribute("data-" + attr));
+            render();
+          });
+        });
+      }
+
+      function renderDisplayControls() {
+        buttonGroup(els.themeControls, [
+          { id: "dark", label: "Dark" },
+          { id: "light", label: "Light" }
+        ], state.theme, "theme", function (id) { state.theme = id; });
+        buttonGroup(els.densityControls, [
+          { id: "compact", label: "Compact" },
+          { id: "comfortable", label: "Comfort" }
+        ], state.density, "density", function (id) { state.density = id; });
+        buttonGroup(els.accentControls, [
+          { id: "blue", label: "Signal" },
+          { id: "green", label: "Grid" },
+          { id: "amber", label: "Work" }
+        ], state.accent, "accent", function (id) { state.accent = id; });
+        els.showAlerts.checked = state.showAlerts;
+      }
+
+      function renderOpsBanner(rows, packets) {
+        if (state.demoMode) {
+          els.opsBanner.hidden = true;
+          els.opsBanner.innerHTML = "";
+          return;
+        }
+        els.opsBanner.hidden = !state.showAlerts;
+        if (!state.showAlerts) return;
+        var critical = rows.filter(function (p) { return p.tier === "critical"; }).length;
+        var activeCritical = packets.filter(function (p) { return p.tier === "critical"; }).length;
+        var verified = rows.filter(function (p) { return p.report === "verified"; }).length;
+        var top = packets[0];
+        els.opsBanner.innerHTML =
+          '<div><strong>Predictive planning run</strong> ' +
+          '<span><i></i>' + activeCritical + ' critical packets active</span>' +
+          '<span>' + critical.toLocaleString("en-US") + ' critical receipts in view</span>' +
+          '<span>' + verified + ' verified overlays</span>' +
+          '<span>public/synthetic inputs</span></div>' +
+          '<div><span>Lead action: ' + esc(top ? top.action : "none") + '</span><span>Last generated: 2026-05-16</span></div>';
+      }
+
+      function renderFieldMeta(rows, packets) {
+        var packetIds = {};
+        packets.forEach(function (p) { packetIds[p.id] = true; });
+        var avgRisk = packets.length ? packets.reduce(function (sum, p) { return sum + p.risk; }, 0) / packets.length : 0;
+        var counties = {};
+        rows.forEach(function (p) { counties[p.county] = true; });
+        var packetCounties = {};
+        packets.forEach(function (p) { packetCounties[p.county] = true; });
+        els.fieldMeta.innerHTML = state.demoMode ?
+          '<span>' + rows.length.toLocaleString("en-US") + ' Wayne receipts</span>' +
+          '<span>avg risk ' + pct1(avgRisk) + '</span>' +
+          '<span>Planner test: next-week schedule ready</span>' :
+          '<span>' + packets.length + ' packets selected</span>' +
+          '<span>' + rows.length.toLocaleString("en-US") + ' filtered receipts</span>' +
+          '<span>' + Object.keys(counties).length + ' counties in scope</span>' +
+          '<span>' + Object.keys(packetCounties).length + ' packet counties</span>' +
+          '<span>avg packet risk ' + pct1(avgRisk) + '</span>' +
+          '<span>Planner test: next-week schedule ready</span>';
+      }
+
+      function topWaynePackets(limit) {
+        return POLES.filter(function (p) { return p.county === PUBLIC_PROOF_COUNTY; }).sort(function (a, b) {
+          return priority(b) - priority(a);
+        }).slice(0, limit || 10);
+      }
+
+      function renderStormScenario(rows, packets) {
+        if (!els.stormScenario) return;
+        var wayneTop = topWaynePackets(10);
+        var wayneCritical = wayneTop.filter(function (p) { return p.tier === "critical"; }).length;
+        var isWayne = state.county === PUBLIC_PROOF_COUNTY;
+        els.stormScenario.innerHTML =
+          '<div><strong>Before-storm scenario</strong><span>' +
+          (state.stormMode ? "Active demo: " : "") +
+          '70 mph wind forecast enters Southeast Michigan. PoleProof reranks Wayne County using the public proof slice, lifting ' +
+          wayneTop.length + ' top packets' + (wayneCritical ? " with " + wayneCritical + " critical fixes" : "") +
+          ' before the storm window.</span></div>' +
+          '<div class="btn-row">' +
+            (state.demoMode ? "" : '<button class="action-btn secondary" type="button" data-command="demo">Run demo</button>') +
+            '<button class="action-btn secondary" type="button" data-command="demoReceipt">' + (isWayne ? "Open top receipt" : "Focus Wayne") + '</button>' +
+          '</div>';
+      }
+
+      var LEAFLET_JS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      var OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+      var MICHIGAN_MASK_OUTER = [
+        [41.28, -90.9], [48.72, -90.9], [48.72, -81.65], [41.28, -81.65]
+      ];
+      var MICHIGAN_LOWER_RING = [
+        [41.70, -86.82], [41.76, -84.80], [41.72, -82.62], [42.10, -82.42],
+        [42.75, -82.52], [43.38, -82.78], [44.05, -83.18], [44.72, -83.31],
+        [45.20, -83.70], [45.56, -84.46], [45.78, -85.32], [45.62, -86.02],
+        [45.20, -86.25], [44.58, -86.28], [43.80, -86.45], [43.00, -86.42],
+        [42.20, -86.30], [41.84, -86.62]
+      ];
+      var MICHIGAN_UPPER_RING = [
+        [45.62, -87.78], [45.84, -86.76], [45.78, -85.72], [46.08, -84.70],
+        [46.42, -84.18], [46.62, -84.52], [46.54, -85.45], [46.42, -86.36],
+        [46.60, -87.35], [46.64, -88.32], [47.05, -89.16], [47.30, -90.05],
+        [46.82, -90.35], [46.34, -89.62], [45.98, -88.70]
+      ];
+      var realMap = {
+        loading: false,
+        ready: false,
+        error: false,
+        map: null,
+        layer: null,
+        L: null,
+        rows: [],
+        packets: []
+      };
+
+      function addMichiganMask(L) {
+        realMap.map.createPane("stateMask");
+        realMap.map.getPane("stateMask").style.zIndex = 405;
+        realMap.map.getPane("stateMask").style.pointerEvents = "none";
+        L.polygon([MICHIGAN_MASK_OUTER, MICHIGAN_LOWER_RING, MICHIGAN_UPPER_RING], {
+          pane: "stateMask",
+          stroke: false,
+          fill: true,
+          fillColor: cssVar("--paper", "#f6f8f3"),
+          fillOpacity: 0.68,
+          interactive: false
+        }).addTo(realMap.map);
+        [MICHIGAN_LOWER_RING, MICHIGAN_UPPER_RING].forEach(function (ring) {
+          L.polyline(ring.concat([ring[0]]), {
+            pane: "stateMask",
+            color: cssVar("--accent", "#247553"),
+            weight: 2,
+            opacity: 0.85,
+            interactive: false
+          }).addTo(realMap.map);
+        });
+      }
+
+      function coordinateText(p) {
+        return p.lat.toFixed(5) + ", " + p.lon.toFixed(5);
+      }
+
+      function streetContext(p) {
+        return p.streetContext || { label: "nearby public road", lat: p.lat, lon: p.lon, heading: 0 };
+      }
+
+      function streetContextLabel(p) {
+        return streetContext(p).label;
+      }
+
+      function streetContextText(p) {
+        var ctx = streetContext(p);
+        return ctx.label + " / " + ctx.lat.toFixed(5) + ", " + ctx.lon.toFixed(5);
+      }
+
+      function googleMapsUrl(p) {
+        return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.lat + "," + p.lon);
+      }
+
+      function priorityLabel(p) {
+        if (p.tier === "critical") return "Fix first";
+        if (p.tier === "high") return "Needs attention";
+        if (p.tier === "elevated") return "Watch closely";
+        return "Routine check";
+      }
+
+      function plainDriverLabel(driver) {
+        return {
+          vegetation: "canopy contact",
+          lean: "pole lean",
+          wind: "wind and ice exposure",
+          flood: "flood and drainage exposure",
+          soil: "base and soil moisture risk",
+          criticality: "outage impact for nearby customers",
+          access: "crew access friction"
+        }[driver.key] || driver.label.toLowerCase();
+      }
+
+      function plainReceiptSentence(p) {
+        var reasons = p.drivers.slice(0, 2).map(plainDriverLabel);
+        if (reasons.length < 2) reasons.push("local condition signals");
+        return "This pole is prioritized because " + reasons[0] + " and " + reasons[1] + " raise outage risk.";
+      }
+
+      function residentImpactLine(p) {
+        if (p.tier === "critical") {
+          return "Outage prevention and safety: this should be inspected or fixed before lower-risk poles nearby, especially before storm conditions.";
+        }
+        if (p.tier === "high") {
+          return "Outage prevention: this belongs in an upcoming work window, but the receipt is not a same-day crew appointment.";
+        }
+        if (p.tier === "elevated") {
+          return "Watchlist: no immediate resident action is implied, but the pole stays visible for future inspection cycles.";
+        }
+        return "No immediate action: this pole stays in routine inspection unless new field evidence changes the receipt.";
+      }
+
+      function dataProofBadge(p) {
+        if (p.publicProofCounty) {
+          return {
+            cls: "real",
+            label: "Real public layers attached",
+            detail: WAYNE_PUBLIC_PROOF.label + " / verified " + WAYNE_PUBLIC_PROOF.verifiedAt
+          };
+        }
+        if (p.dataProof === "validation") {
+          return {
+            cls: "validation",
+            label: "Needs DTE validation",
+            detail: "Low-confidence or incomplete-source demo receipt; do not dispatch without DTE inspection/work-order corroboration."
+          };
+        }
+        return {
+          cls: "synthetic",
+          label: "Synthetic demo estimate",
+          detail: "Generated for statewide coverage from public-data-style proxies; production requires DTE asset and outcome data."
+        };
+      }
+
+      function sourceManifestFor(p) {
+        if (p.publicProofCounty) return WAYNE_PUBLIC_PROOF.layers;
+        return [
+          { name: "Weather exposure", value: "NOAA-style wind, ice, storm, and precipitation proxies", detail: "Synthetic statewide values shaped to match plausible Michigan risk geography.", source: "public-data-style proxy" },
+          { name: "Imagery / vegetation", value: "Landsat/NAIP/Sentinel-style canopy and ROW proxy", detail: "Demo vegetation score; production should compute from real image tiles.", source: "public-data-style proxy" },
+          { name: "Flood / terrain / soil", value: "FEMA/USGS/SSURGO-style flood, slope, drainage, and soil-moisture proxy", detail: "Statewide synthetic estimate, held behind receipt disclosure.", source: "public-data-style proxy" },
+          { name: "Infrastructure context", value: "Open basemap, road access, and criticality proxy", detail: "Open context only; DTE asset truth is not included.", source: "public-data-style proxy" }
+        ];
+      }
+
+      function guardrailPenalty(p) {
+        return state.confidenceGuard && p.confidence < 0.67 && p.risk < 0.74 && p.report !== "verified" ? 0.15 : 0;
+      }
+
+      function featureValue(p, key) {
+        return p.features && typeof p.features[key] === "number" ? p.features[key] : 0;
+      }
+
+      function renderDataProofPanel(p) {
+        var proof = dataProofBadge(p);
+        var layers = sourceManifestFor(p).map(function (layer) {
+          return '<div class="proof-item"><strong>' + esc(layer.name) + '</strong><span>' +
+            esc(layer.value) + '<br>' + esc(layer.detail) + '<br>Source: ' + esc(layer.source) + '</span></div>';
+        }).join("");
+        var note = p.publicProofCounty ? WAYNE_PUBLIC_PROOF.disclosure :
+          "This receipt is useful for judging workflow and explainability, but it is not claiming actual DTE asset condition.";
+        return '<div class="receipt-card">' +
+          '<div class="receipt-top"><h3>Data proof</h3><p>' + esc(proof.detail) + '</p></div>' +
+          '<div class="receipt-body">' +
+            '<div class="data-proof ' + esc(proof.cls) + '">' + esc(proof.label) + '</div>' +
+            '<div class="proof-grid">' + layers + '</div>' +
+            '<div class="street-context-note"><strong>Honest submission wording:</strong> ' + esc(note) + '</div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      function renderFormulaPanel(p) {
+        var guard = guardrailPenalty(p);
+        var items = [
+          ["Vegetation", featureValue(p, "vegetation"), "canopy/ROW contact pressure"],
+          ["Storm exposure", featureValue(p, "wind"), "NOAA storm and wind exposure"],
+          ["Flood / soil", clamp((featureValue(p, "flood") + featureValue(p, "soil")) / 2, 0, 1), "flood zones, drainage, soil moisture"],
+          ["Lean / structure", featureValue(p, "lean"), "structure signal; needs field validation"],
+          ["Criticality", featureValue(p, "criticality"), "outage consequence proxy"],
+          ["Guardrail", guard, "low confidence subtracts from packet priority"]
+        ].map(function (item) {
+          return '<div class="formula-item"><strong>' + esc(item[0]) + ' ' + pct1(item[1]) + '</strong><span>' + esc(item[2]) + '</span></div>';
+        }).join("");
+        return '<div class="receipt-card">' +
+          '<div class="receipt-top"><h3>Scoring formula</h3><p>Readable enough for operations and field review; no black-box score without drivers.</p></div>' +
+          '<div class="receipt-body">' +
+            '<div class="formula-line">Risk = vegetation + storm exposure + flood/soil + lean/structure + criticality - confidence guardrail</div>' +
+            '<div class="formula-grid">' + items + '</div>' +
+            '<div class="street-context-note"><strong>Guardrail note:</strong> The guardrail affects dispatch priority. Raw risk remains visible so reviewers can see uncertainty instead of hiding it.</div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      function renderValidationPanel(p) {
+        var items = [
+          ["Inspection outcomes", "Compare top-ranked packets against confirmed lean, rot, canopy contact, base decay, and crossarm findings."],
+          ["Outage / work-order history", "Back-test whether top deciles capture more outage minutes and emergency work orders than age-cycle scheduling."],
+          ["Top-packet precision", "Track precision@25 and precision@100 by county, action type, and storm window."],
+          ["Closed-loop weights", "After crews close a receipt, update model weights and keep the old receipt hash for audit replay."],
+          ["Fallback demo", "Static app, live link, screenshots, receipt JSON, and work-packet CSV all remain usable if network layers fail."]
+        ].map(function (item) {
+          return '<div class="validation-item"><strong>' + esc(item[0]) + '</strong><span>' + esc(item[1]) + '</span></div>';
+        }).join("");
+        return '<div class="receipt-card">' +
+          '<div class="receipt-top"><h3>Validation plan</h3><p>How DTE would turn this public-data proof into production accuracy.</p></div>' +
+          '<div class="receipt-body">' +
+            '<div class="validation-grid">' + items + '</div>' +
+            '<div class="street-context-note"><strong>Production handoff:</strong> Add DTE asset IDs, inspection results, outages, work orders, and post-work closures; keep public layers as explainable context.</div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      function locationActions(p) {
+        return '<div class="location-actions">' +
+          '<a class="map-link primary" href="' + esc(googleMapsUrl(p)) + '" target="_blank" rel="noopener">Open pole estimate in Google Maps</a>' +
+        '</div>';
+      }
+
+      var commandState = {
+        open: false,
+        activeIndex: 0
+      };
+
+      function openExternal(url) {
+        window.open(url, "_blank", "noopener");
+      }
+
+      function runJudgeDemo(openReceipt) {
+        state.demoMode = true;
+        state.stormMode = true;
+        state.showAlerts = false;
+        state.objective = "outage";
+        state.county = PUBLIC_PROOF_COUNTY;
+        state.tier = "all";
+        state.minRisk = 35;
+        state.budget = 60;
+        state.searchQuery = "Detroit / Wayne County";
+        var top = topWaynePackets(1)[0];
+        if (top) state.selectedId = top.id;
+        state.searchStatus = "Wayne County public proof slice selected; open the top receipt when ready.";
+        setScreen(openReceipt ? "receipt" : "work");
+      }
+
+      function commandItems() {
+        var selected = selectedPole();
+        return [
+          { id: "demo", label: "Run 90-sec judge demo", group: "Demo", run: function () { runJudgeDemo(false); } },
+          { id: "demoReceipt", label: "Demo: open top Wayne receipt", group: "Demo", run: function () { runJudgeDemo(true); } },
+          { id: "work", label: "Go to Field", group: "Screen", run: function () { setScreen("work"); } },
+          { id: "receipt", label: "Go to Receipt", group: "Screen", run: function () { setScreen("receipt"); } },
+          { id: "google", label: "Open pole estimate in Google Maps", group: "Location", run: function () { if (selected) openExternal(googleMapsUrl(selected)); } },
+          { id: "csv", label: "Export work packets CSV", group: "Export", run: exportCsv },
+          { id: "json", label: "Export selected receipt JSON", group: "Export", run: exportJson },
+          { id: "print", label: "Print receipt", group: "Export", run: function () { window.print(); } },
+          { id: "search", label: "Search my area", group: "Resident", run: function () { setScreen("work"); setTimeout(function () { els.residentSearch.focus(); }, 0); } },
+          { id: "county", label: "Change county filter", group: "Filter", run: function () { setScreen("work"); setTimeout(function () { els.county.focus(); }, 0); } },
+          { id: "budget", label: "Change inspection budget", group: "Filter", run: function () { setScreen("work"); setTimeout(function () { els.budget.focus(); }, 0); } }
+        ];
+      }
+
+      function filteredCommands() {
+        var query = (els.commandSearch.value || "").trim().toLowerCase();
+        return commandItems().filter(function (item) {
+          return !query || item.label.toLowerCase().indexOf(query) !== -1 || item.group.toLowerCase().indexOf(query) !== -1;
+        });
+      }
+
+      function renderCommandList() {
+        var items = filteredCommands();
+        commandState.activeIndex = clamp(commandState.activeIndex, 0, Math.max(items.length - 1, 0));
+        els.commandList.innerHTML = items.length ? items.map(function (item, i) {
+          return '<button class="command-item ' + (i === commandState.activeIndex ? "active" : "") + '" type="button" role="option" data-command="' + esc(item.id) + '" aria-selected="' + (i === commandState.activeIndex ? "true" : "false") + '">' +
+            '<strong>' + esc(item.label) + '</strong><span>' + esc(item.group) + '</span></button>';
+        }).join("") : '<div class="empty">No commands match that search.</div>';
+      }
+
+      function openCommandPalette() {
+        commandState.open = true;
+        commandState.activeIndex = 0;
+        els.commandOverlay.hidden = false;
+        els.commandSearch.value = "";
+        renderCommandList();
+        setTimeout(function () { els.commandSearch.focus(); }, 0);
+      }
+
+      function closeCommandPalette() {
+        commandState.open = false;
+        els.commandOverlay.hidden = true;
+      }
+
+      function performCommand(id) {
+        var item = commandItems().find(function (cmd) { return cmd.id === id; });
+        if (!item) return;
+        closeCommandPalette();
+        item.run();
+      }
+
+      function markerIcon(p, inPacket) {
+        var L = realMap.L;
+        var selected = p.id === state.selectedId;
+        var size = selected ? 24 : (inPacket ? 17 : 10);
+        var cls = "pole-marker-pin" + (inPacket ? " packet" : " context") + (selected ? " selected" : "");
+        return L.divIcon({
+          className: "pole-marker-wrap",
+          html: '<span class="' + cls + '" style="background:' + esc(colorForTier(p.tier)) + '"></span>',
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+          popupAnchor: [0, -size / 2]
+        });
+      }
+
+      function markerTooltip(p, inPacket) {
+        return '<strong>' + esc(priorityLabel(p)) + ' / ' + esc(p.county) + ' County</strong><br>' +
+          esc(inPacket ? "Selected work packet" : "Nearby pole context") + '<br>' +
+          'Risk ' + pct1(p.risk) + ' / ' + esc(p.action);
+      }
+
+      function markerPopup(p) {
+        return '<div class="map-popup">' +
+          '<strong>' + esc(priorityLabel(p)) + ' in ' + esc(p.county) + ' County</strong>' +
+          '<span>' + esc(p.receipt) + ' / ' + esc(p.action) + '</span>' +
+          '<span>Pole estimate: ' + esc(coordinateText(p)) + '</span>' +
+          '<span>Road anchor: ' + esc(streetContextLabel(p)) + '</span>' +
+          locationActions(p) +
+        '</div>';
+      }
+
+      function initRealMap() {
+        if (!els.realMap || realMap.ready || realMap.loading || realMap.error) return;
+        if (window.L && window.L.map) {
+          createRealMap();
+          return;
+        }
+        realMap.loading = true;
+        var script = document.createElement("script");
+        script.src = LEAFLET_JS_URL;
+        script.async = true;
+        script.onload = function () {
+          realMap.loading = false;
+          createRealMap();
+        };
+        script.onerror = function () {
+          realMap.loading = false;
+          realMap.error = true;
+          if (els.mapShell) {
+            els.mapShell.classList.remove("real-map-active");
+            els.mapShell.classList.add("real-map-error");
+          }
+        };
+        document.head.appendChild(script);
+      }
+
+      function createRealMap() {
+        if (realMap.ready || !window.L || !els.realMap) return;
+        if (els.mapShell) els.mapShell.classList.add("real-map-active");
+        realMap.L = window.L;
+        var L = realMap.L;
+        realMap.map = L.map(els.realMap, {
+          zoomControl: false,
+          scrollWheelZoom: false,
+          zoomSnap: 0.25,
+          minZoom: 6,
+          maxZoom: 13,
+          maxBounds: MICHIGAN_PADDED_BOUNDS,
+          maxBoundsViscosity: 0.95
+        }).setView(isWayneMapFocus() ? WAYNE_CENTER : MICHIGAN_CENTER, isWayneMapFocus() ? 9.5 : 6.5);
+        L.control.zoom({ position: "bottomright" }).addTo(realMap.map);
+        L.tileLayer(OSM_TILE_URL, {
+          maxZoom: 19,
+          noWrap: true,
+          bounds: MICHIGAN_PADDED_BOUNDS,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(realMap.map);
+        addMichiganMask(L);
+        realMap.map.fitBounds(isWayneMapFocus() ? WAYNE_LATLNG_BOUNDS : MICHIGAN_LATLNG_BOUNDS, {
+          padding: [8, 8],
+          maxZoom: isWayneMapFocus() ? 9.75 : 6.5
+        });
+        realMap.layer = L.layerGroup().addTo(realMap.map);
+        realMap.ready = true;
+        setTimeout(function () {
+          realMap.map.invalidateSize();
+          refreshRealMap();
+        }, 0);
+      }
+
+      function statewideContextRows(rows, packetIds, limit) {
+        var context = [];
+        var used = {};
+        var counties = {};
+        rows.forEach(function (p) {
+          if (context.length >= limit) return;
+          if (packetIds[p.id] || counties[p.county]) return;
+          counties[p.county] = true;
+          used[p.id] = true;
+          context.push(p);
+        });
+        var stride = Math.max(1, Math.floor(rows.length / Math.max(limit, 1)));
+        rows.forEach(function (p, i) {
+          if (context.length >= limit) return;
+          if (packetIds[p.id] || used[p.id] || i % stride !== 0) return;
+          used[p.id] = true;
+          context.push(p);
+        });
+        return context;
+      }
+
+      function refreshRealMap() {
+        if (!realMap.ready) return;
+        var L = realMap.L;
+        var rows = realMap.rows;
+        var packets = realMap.packets;
+        var packetIds = {};
+        packets.forEach(function (p) { packetIds[p.id] = true; });
+        var selected = selectedPole();
+        var context = statewideContextRows(rows, packetIds, state.county === "All counties" ? 260 : (isWayneMapFocus() ? 24 : 80));
+        var shown = context.concat(packets);
+        if (selected && !shown.some(function (p) { return p.id === selected.id; })) shown.push(selected);
+        realMap.layer.clearLayers();
+        var selectedMarker = null;
+        shown.forEach(function (p) {
+          var inPacket = !!packetIds[p.id];
+          var marker = L.marker([p.lat, p.lon], {
+            icon: markerIcon(p, inPacket),
+            title: priorityLabel(p) + " in " + p.county + " County"
+          });
+          marker.bindTooltip(markerTooltip(p, inPacket), {
+            className: "pole-tooltip",
+            direction: "top",
+            offset: [0, -8]
+          });
+          marker.bindPopup(markerPopup(p), {
+            maxWidth: 250,
+            closeButton: true
+          });
+          marker.on("click", function () {
+            state.selectedId = p.id;
+            render();
+          });
+          marker.addTo(realMap.layer);
+          if (p.id === state.selectedId) selectedMarker = marker;
+        });
+
+        var focus = isWayneMapFocus() ? [] : (state.county === "All counties" ? shown.slice() : packets.slice());
+        if (selected && !focus.some(function (p) { return p.id === selected.id; })) focus.push(selected);
+        if (isWayneMapFocus()) {
+          realMap.map.fitBounds(WAYNE_LATLNG_BOUNDS, {
+            padding: [24, 24],
+            maxZoom: 10.25
+          });
+        } else if (focus.length) {
+          realMap.map.fitBounds(L.latLngBounds(focus.map(function (p) { return [p.lat, p.lon]; })), {
+            padding: [34, 34],
+            maxZoom: state.county === "All counties" ? 7 : 10
+          });
+        }
+        realMap.map.invalidateSize();
+        if (selectedMarker) selectedMarker.openPopup();
+      }
+
+      function updateRealMap(rows, packets) {
+        realMap.rows = rows;
+        realMap.packets = packets;
+        if (realMap.error) return;
+        initRealMap();
+        if (realMap.ready) refreshRealMap();
+      }
+
+      function drawBaseMap(svg) {
+        var mapBg = cssVar("--map-bg", "#08130f");
+        var gridColor = cssVar("--map-grid", "#1b3027");
+        var waterColor = cssVar("--map-water", "#123341");
+        var labelColor = cssVar("--muted", "#8d9b91");
+        var stationColor = cssVar("--blue", "#57a9dc");
+        var bg = '<rect x="0" y="0" width="760" height="430" fill="' + mapBg + '"></rect>';
+        if (isWayneMapFocus()) {
+          var wayneWater = '<path d="M628 18 C686 80 704 150 690 226 C678 294 716 350 672 420 L760 430 L760 0 Z" fill="' + waterColor + '" opacity="0.88"></path>';
+          var wayneGrid = "";
+          for (var wx = 60; wx < 730; wx += 72) wayneGrid += '<path d="M' + wx + ' 28 L' + (wx - 22) + ' 404" stroke="' + gridColor + '" stroke-width="1"></path>';
+          for (var wy = 54; wy < 405; wy += 50) wayneGrid += '<path d="M34 ' + wy + ' L724 ' + (wy + 16) + '" stroke="' + gridColor + '" stroke-width="1"></path>';
+          var places = [
+            ["DETROIT", 42.3314, -83.0458],
+            ["DEARBORN", 42.3223, -83.1763],
+            ["LIVONIA", 42.3684, -83.3527],
+            ["WYANDOTTE", 42.2142, -83.1499],
+            ["GROSSE POINTE", 42.3861, -82.9119],
+            ["WAYNE PROOF SLICE", 42.075, -83.52]
+          ].map(function (p) {
+            return '<text x="' + projectX(p[2]).toFixed(1) + '" y="' + projectY(p[1]).toFixed(1) +
+              '" font-size="10" fill="' + labelColor + '" font-weight="850">' + esc(p[0]) + '</text>';
+          }).join("");
+          var wayneStations = STATIONS.filter(function (s) {
+            return s[0] === "Detroit Metro" || s[0] === "Detroit City";
+          }).map(function (s) {
+            return '<g><circle cx="' + projectX(s[1]) + '" cy="' + projectY(s[2]) + '" r="4" fill="' + stationColor + '"></circle>' +
+              '<text x="' + (projectX(s[1]) + 7) + '" y="' + (projectY(s[2]) + 4) + '" font-size="9" fill="' + stationColor + '" font-weight="800">' + esc(s[0]) + '</text></g>';
+          }).join("");
+          svg.innerHTML = bg + wayneWater + wayneGrid + places + wayneStations;
+          return;
+        }
+        var water = '<path d="M657 41 C725 88 735 160 704 218 C686 252 708 301 675 352 C654 384 619 394 604 360 C588 323 610 274 594 235 C571 179 604 88 657 41Z" fill="' + waterColor + '" opacity="0.9"></path>';
+        var grid = "";
+        for (var x = 70; x < 720; x += 80) grid += '<path d="M' + x + ' 40 L' + (x - 36) + ' 392" stroke="' + gridColor + '" stroke-width="1"></path>';
+        for (var y = 64; y < 390; y += 54) grid += '<path d="M42 ' + y + ' L718 ' + (y + 22) + '" stroke="' + gridColor + '" stroke-width="1"></path>';
+        var labelNames = { Wayne: true, Oakland: true, Kent: true, Ingham: true, "Grand Traverse": true, Marquette: true, Chippewa: true, Houghton: true, Saginaw: true, Kalamazoo: true, Berrien: true, Alpena: true };
+        var countyLabels = COUNTY_AREAS.filter(function (c, i) {
+          return labelNames[c.name] || i % 7 === 0;
+        }).map(function (c) {
+          var x = projectX(c.lon);
+          var y = projectY(c.lat);
+          return '<text x="' + x + '" y="' + y + '" font-size="9" fill="' + labelColor + '" font-weight="800">' + esc(c.name.toUpperCase()) + '</text>';
+        }).join("");
+        var stations = STATIONS.map(function (s) {
+          return '<g><circle cx="' + projectX(s[1]) + '" cy="' + projectY(s[2]) + '" r="4" fill="' + stationColor + '"></circle>' +
+            '<text x="' + (projectX(s[1]) + 7) + '" y="' + (projectY(s[2]) + 4) + '" font-size="9" fill="' + stationColor + '" font-weight="800">' + esc(s[0]) + '</text></g>';
+        }).join("");
+        svg.innerHTML = bg + water + grid + countyLabels + stations;
+      }
+
+      function drawMap(rows, packets) {
+        var svg = els.map;
+        drawBaseMap(svg);
+        updateRealMap(rows, packets);
+        var ink = cssVar("--ink", "#edf5ee");
+        var blue = cssVar("--blue", "#57a9dc");
+        var violet = cssVar("--violet", "#9c83e8");
+        var paper = cssVar("--paper", "#07100d");
+        var packetIds = {};
+        packets.forEach(function (p) { packetIds[p.id] = true; });
+        var selected = state.selectedId;
+        var context = statewideContextRows(rows, packetIds, state.county === "All counties" ? 360 : 120);
+        var shown = context.concat(packets);
+        var circles = shown.map(function (p) {
+          var x = projectX(p.lon), y = projectY(p.lat);
+          var inPacket = packetIds[p.id];
+          var r = inPacket ? 5.8 : 2.5;
+          var stroke = p.id === selected ? ink : (inPacket ? blue : paper);
+          var sw = p.id === selected ? 3 : (inPacket ? 2 : 0.7);
+          return '<circle class="node" tabindex="0" data-id="' + p.id + '" cx="' + x.toFixed(2) +
+            '" cy="' + y.toFixed(2) + '" r="' + r + '" fill="' + colorForTier(p.tier) +
+            '" stroke="' + stroke + '" stroke-width="' + sw + '" opacity="' + (inPacket ? "0.96" : "0.28") + '"></circle>';
+        }).join("");
+        var reports = state.communityOverlay ? shown.filter(function (p) { return p.report !== "none"; }).map(function (p) {
+          var x = projectX(p.lon), y = projectY(p.lat);
+          return '<rect class="report" data-id="' + p.id + '" x="' + (x - 4) + '" y="' + (y - 4) +
+            '" width="8" height="8" transform="rotate(45 ' + x + ' ' + y + ')" fill="' + paper + '" stroke="' + violet + '" stroke-width="2"></rect>';
+        }).join("") : "";
+        svg.insertAdjacentHTML("beforeend", reports + circles);
+
+        Array.prototype.forEach.call(svg.querySelectorAll(".node,.report"), function (n) {
+          n.addEventListener("mousemove", function (e) {
+            var p = POLES.find(function (x) { return x.id === n.getAttribute("data-id"); });
+            showTip(e, p);
+          });
+          n.addEventListener("mouseleave", hideTip);
+          n.addEventListener("click", function () {
+            state.selectedId = n.getAttribute("data-id");
+            render();
+          });
+          n.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+              state.selectedId = n.getAttribute("data-id");
+              render();
+            }
+          });
+        });
+      }
+
+      function showTip(e, p) {
+        if (!p) return;
+        els.mapTip.style.display = "block";
+        els.mapTip.style.left = Math.min(e.offsetX + 14, els.map.clientWidth - 250) + "px";
+        els.mapTip.style.top = Math.max(8, e.offsetY + 14) + "px";
+        els.mapTip.innerHTML = '<strong>' + esc(p.id) + ' ' + esc(p.county) + '</strong><br>' +
+          esc(p.receipt) + '<br>Risk ' + pct1(p.risk) + ' / confidence ' + pct1(p.confidence) +
+          '<br>' + esc(p.action);
+      }
+
+      function hideTip() {
+        els.mapTip.style.display = "none";
+      }
+
+      function renderTable(rows, packets) {
+        var packetIds = {};
+        packets.forEach(function (p) { packetIds[p.id] = true; });
+        els.workRows.innerHTML = rows.slice(0, Math.max(state.budget, 80)).map(function (p, i) {
+          var cls = "row" + (p.id === state.selectedId ? " active" : "");
+          return '<tr class="' + cls + '" tabindex="0" data-id="' + p.id + '">' +
+            '<td>' + (i + 1) + (packetIds[p.id] ? ' <span class="packet-badge">packet</span>' : "") + '</td>' +
+            '<td>' + esc(p.receipt) + '</td>' +
+            '<td>' + esc(p.county) + '</td>' +
+            '<td><div class="risk-cell"><span>' + pct1(p.risk) + '</span><div class="risk-meter"><i style="width:' + pct(p.risk) + '; background:' + colorForTier(p.tier) + '"></i></div></div></td>' +
+            '<td>' + pct1(p.confidence) + '</td>' +
+            '<td><span class="tier ' + p.tier + '">' + esc(p.tier.toUpperCase()) + '</span></td>' +
+            '<td>' + esc(p.action) + '</td>' +
+          '</tr>';
+        }).join("");
+        Array.prototype.forEach.call(els.workRows.querySelectorAll("tr"), function (tr) {
+          tr.addEventListener("click", function () {
+            state.selectedId = tr.getAttribute("data-id");
+            render();
+          });
+          tr.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+              state.selectedId = tr.getAttribute("data-id");
+              render();
+            }
+          });
+        });
+        els.worklistSummary.textContent = " - " + rows.length.toLocaleString("en-US") + " receipts match current filters";
+        els.cycleSummary.textContent = packets.length + " active packets";
+      }
+
+      function renderReceipt(p) {
+        if (!p) {
+          els.receiptStatus.textContent = "No active selection";
+          els.receiptShell.innerHTML = '<div class="empty">No pole matches the current filters.</div>';
+          return;
+        }
+        var topDrivers = p.drivers.slice(0, 5);
+        var drivers = topDrivers.map(function (d) {
+          return '<div class="driver"><div><strong>' + esc(d.label) + '</strong><span>' +
+            esc(d.source) + '</span></div><div class="bar"><i style="width:' + pct(clamp(d.weight / 0.30, 0.06, 1)) +
+            '"></i></div></div>';
+        }).join("");
+        var nextWindow = p.risk >= 0.72 ? "0-14 days" : (p.risk >= 0.48 ? "15-45 days" : "next cycle");
+        var materials = p.action === "Tree trim" ? "trim crew, ROW permit check, chipper slot" :
+          p.action === "Reinforce / replace" ? "class-matched pole, brace kit, transfer window" :
+          p.action === "Inspect base" ? "probe, bore kit, base wrap, soil photo set" :
+          "standard inspection kit, photo set, handheld GPS";
+        var audit = [
+          "Risk score is separated from resident reports; reports can corroborate priority but do not train the model.",
+          "Low-confidence guardrail can hold a pole out of the crew packet unless risk, criticality, or verification clears the threshold.",
+          "Receipt hash locks the visible evidence, top drivers, action, and score used for this work cycle.",
+          "Post-work follow-up compares before/after condition and expected risk reduction for accountability."
+        ];
+        var manifest = sourceManifestFor(p).map(function (layer) {
+          return layer.name + ": " + layer.value;
+        }).concat(["Moderated resident and crew reports kept outside model training."]);
+        var proof = dataProofBadge(p);
+        els.receiptStatus.textContent = p.tier + " / " + p.action + " / " + p.hash;
+        els.receiptShell.innerHTML =
+          '<div class="receipt-card">' +
+            '<div class="receipt-top">' +
+              '<h3>' + esc(p.receipt) + ' / ' + esc(p.id) + '</h3>' +
+              '<p>' + esc(p.county) + ' county, segment ' + esc(p.segment) + ', NOAA station ' + esc(p.station) + '<br>Pole estimate ' + esc(coordinateText(p)) + ' / receipt hash ' + esc(p.hash) + '</p>' +
+              '<div class="data-proof ' + esc(proof.cls) + '">' + esc(proof.label) + '</div>' +
+              '<div class="resident-summary"><strong>Plain-language reason</strong>' + esc(plainReceiptSentence(p)) + '</div>' +
+              '<div class="resident-summary impact"><strong>What this means for me</strong>' + esc(residentImpactLine(p)) + '</div>' +
+              '<div class="challenge-fit" aria-label="DTE challenge fit">' +
+                '<span>Pole-level unit</span>' +
+                '<span>Visible drivers</span>' +
+                '<span>Actionable work</span>' +
+                '<span>Explainable logic</span>' +
+                '<span>Scales statewide</span>' +
+              '</div>' +
+              locationActions(p) +
+              '<div class="street-context-note"><strong>Road context:</strong> ' + esc(streetContextText(p)) + '. This anchors the synthetic pole estimate to a public-road reference without promising unavailable imagery.</div>' +
+              '<div class="receipt-lock"><span>' + esc(p.tier) + ' tier</span><span>' + esc(p.sourceCompleteness) + '/5 sources</span><span>' + esc(p.report === "none" ? "no overlay" : p.report + " overlay") + '</span></div>' +
+            '</div>' +
+            '<div class="receipt-body">' +
+              '<div class="big-score">' +
+                '<div class="score-box"><span>Risk</span><strong class="' + (p.risk >= 0.72 ? "red" : p.risk >= 0.48 ? "amber" : "green") + '">' + pct1(p.risk) + '</strong></div>' +
+                '<div class="score-box"><span>Confidence</span><strong>' + pct1(p.confidence) + '</strong></div>' +
+                '<div class="score-box"><span>Expected drop</span><strong>' + pct1(p.reduction) + '</strong></div>' +
+                '<div class="score-box"><span>Outage minutes</span><strong>' + p.outageMinutes.toLocaleString("en-US") + '</strong></div>' +
+              '</div>' +
+              '<h2>Evidence drivers</h2>' + drivers +
+            '</div>' +
+          '</div>' +
+          '<div class="receipt-card">' +
+            '<div class="receipt-top"><h3>Crew packet</h3><p>' + esc(p.action) + ' / target window ' + esc(nextWindow) + '</p></div>' +
+            '<div class="receipt-body packet-grid">' +
+              '<div class="packet-line"><span>Job code</span><strong>' + esc(jobCode(p)) + '</strong></div>' +
+              '<div class="packet-line"><span>Recommended action</span><strong>' + esc(p.action) + ' because ' + esc(plainDriverLabel(p.drivers[0])) + ' is the leading risk driver</strong></div>' +
+              '<div class="packet-line"><span>Target window</span><strong>' + esc(nextWindow) + ' before lower-risk work in the same cycle</strong></div>' +
+              '<div class="packet-line"><span>Materials / equipment</span><strong>' + esc(materials) + '</strong></div>' +
+              '<div class="packet-line"><span>Crew checklist</span><strong>verify pole ID, capture four photos, inspect base and attachment points, log driver evidence, close receipt with disposition</strong></div>' +
+              '<div class="packet-line"><span>Expected risk drop</span><strong>' + pct1(p.reduction) + ' / ' + money(p.outageMinutes * p.reduction * 18) + ' avoided outage value before truck-roll cost</strong></div>' +
+              '<div class="packet-line"><span>CSV export</span><strong><button class="action-btn secondary" type="button" data-command="csv">Export current work packets CSV</button></strong></div>' +
+              '<div class="packet-line"><span>Report</span><strong>' + esc(p.report === "none" ? "no corroborating field report" : p.report + " corroborating report") + '</strong></div>' +
+            '</div>' +
+          '</div>' +
+          renderDataProofPanel(p) +
+          renderFormulaPanel(p) +
+          '<div class="receipt-card">' +
+            '<div class="receipt-top"><h3>Decision audit</h3><p>Guardrails, provenance, and source manifest for regulator and crew review.</p></div>' +
+            '<div class="receipt-body">' +
+              '<ul class="audit">' + audit.map(function (a) {
+              return '<li>' + esc(a) + '</li>';
+              }).join("") + '</ul>' +
+              '<h2>Guardrails and source manifest</h2>' +
+              '<ul class="source-list">' + manifest.map(function (item) {
+                return '<li><i></i><span>' + esc(item) + '</span></li>';
+              }).join("") + '</ul>' +
+              '<div class="street-context-note"><strong>Validation-ready label:</strong> Synthetic-demo estimates are clearly disclosed here and ready to be checked against DTE inspection, outage, and work-order outcomes.</div>' +
+            '</div>' +
+          '</div>' +
+          renderValidationPanel(p);
+      }
+
+      function jobCode(p) {
+        var prefix = p.action === "Tree trim" ? "VEG" :
+          p.action === "Reinforce / replace" ? "REP" :
+          p.action === "Inspect base" ? "BAS" :
+          p.action === "Protect circuit" ? "CRT" : "INS";
+        return prefix + "-" + p.segment + "-" + p.id.slice(-3);
+      }
+
+      function exportCsv() {
+        var rows = packetRows();
+        var head = ["rank", "receipt", "pole_id", "county", "segment", "risk", "confidence", "tier", "action", "expected_risk_drop", "data_proof", "top_driver", "receipt_hash"];
+        var lines = [head.join(",")];
+        rows.forEach(function (p, i) {
+          lines.push([
+            i + 1, p.receipt, p.id, p.county, p.segment, p.risk, p.confidence, p.tier,
+            p.action, p.reduction, dataProofBadge(p).label, p.drivers[0].label, p.hash
+          ].map(csv).join(","));
+        });
+        download("poleproof_work_packets.csv", lines.join("\n"), "text/csv");
+      }
+
+      function exportJson() {
+        var p = selectedPole();
+        if (!p) return;
+        var payload = {
+          exported_at: new Date().toISOString(),
+          app: "PoleProof",
+          data_proof: dataProofBadge(p),
+          public_layers: sourceManifestFor(p),
+          validation_plan: [
+            "compare against DTE inspection outcomes",
+            "compare against outage and work-order history",
+            "track precision of top-ranked packets",
+            "update weights after field closure while preserving receipt hash"
+          ],
+          receipt: p
+        };
+        download("poleproof_" + p.receipt + ".json", JSON.stringify(payload, null, 2), "application/json");
+      }
+
+      function csv(v) {
+        var s = String(v);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }
+
+      function download(name, text, type) {
+        var blob = new Blob([text], { type: type });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function render() {
+        setDisplayAttrs();
+        var rows = filtered();
+        var packets = rows.slice(0, state.budget);
+        selectFirstIfNeeded(rows);
+        renderNavigation();
+        updateVisiblePanels();
+        renderScreenSummary();
+        renderOverview(rows, packets);
+        renderOpsBanner(rows, packets);
+        renderKpis(rows, packets);
+        updateMapViewportSize();
+        renderControls();
+        renderDisplayControls();
+        renderFieldMeta(rows, packets);
+        renderStormScenario(rows, packets);
+        drawMap(rows, packets);
+        renderTable(rows, packets);
+        renderReceipt(selectedPole());
+      }
+
+      document.addEventListener("click", function (e) {
+        var command = e.target.closest("[data-command]");
+        if (!command) return;
+        performCommand(command.getAttribute("data-command"));
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+          e.preventDefault();
+          openCommandPalette();
+        } else if (e.key === "Escape" && commandState.open) {
+          closeCommandPalette();
+        }
+      });
+
+      if (els.commandOpen) els.commandOpen.addEventListener("click", openCommandPalette);
+      els.commandOverlay.addEventListener("click", function (e) {
+        if (e.target === els.commandOverlay) closeCommandPalette();
+      });
+      els.commandSearch.addEventListener("input", function () {
+        commandState.activeIndex = 0;
+        renderCommandList();
+      });
+      els.commandSearch.addEventListener("keydown", function (e) {
+        var items = filteredCommands();
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          commandState.activeIndex = clamp(commandState.activeIndex + 1, 0, Math.max(items.length - 1, 0));
+          renderCommandList();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          commandState.activeIndex = clamp(commandState.activeIndex - 1, 0, Math.max(items.length - 1, 0));
+          renderCommandList();
+        } else if (e.key === "Enter" && items[commandState.activeIndex]) {
+          e.preventDefault();
+          performCommand(items[commandState.activeIndex].id);
+        }
+      });
+      els.residentSearchButton.addEventListener("click", performResidentSearch);
+      els.residentSearch.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          performResidentSearch();
+        }
+      });
+      els.objective.addEventListener("change", function () {
+        state.objective = els.objective.value;
+        render();
+      });
+      els.county.addEventListener("change", function () {
+        state.county = els.county.value;
+        render();
+      });
+      els.minRisk.addEventListener("input", function () {
+        state.minRisk = +els.minRisk.value;
+        render();
+      });
+      els.budget.addEventListener("input", function () {
+        state.budget = +els.budget.value;
+        render();
+      });
+      els.confidenceGuard.addEventListener("change", function () {
+        state.confidenceGuard = els.confidenceGuard.checked;
+        render();
+      });
+      els.communityOverlay.addEventListener("change", function () {
+        state.communityOverlay = els.communityOverlay.checked;
+        render();
+      });
+      els.explainability.addEventListener("change", function () {
+        state.explainability = els.explainability.checked;
+        render();
+      });
+      els.showAlerts.addEventListener("change", function () {
+        state.showAlerts = els.showAlerts.checked;
+        render();
+      });
+      els.exportCsv.addEventListener("click", exportCsv);
+      els.exportJson.addEventListener("click", exportJson);
+      els.printReceipt.addEventListener("click", function () { window.print(); });
+      window.addEventListener("resize", function () {
+        updateMapViewportSize();
+        if (realMap.ready) realMap.map.invalidateSize();
+      });
+
+      var launchParams = new URLSearchParams(window.location.search);
+      if (launchParams.get("demo") !== "0") {
+        runJudgeDemo(launchParams.get("screen") === "receipt");
+      } else {
+        render();
+      }
+    })();
+  </script>
+</body>
+</html>
