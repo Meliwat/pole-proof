@@ -192,6 +192,28 @@
       border-right: 1px solid var(--line);
     }
 
+    button.kpi {
+      width: 100%;
+      border-top: 0;
+      border-bottom: 0;
+      border-left: 0;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      appearance: none;
+    }
+
+    button.kpi:hover {
+      background: #f4f8f1;
+    }
+
+    button.kpi:focus-visible {
+      z-index: 1;
+      outline: 3px solid var(--blue);
+      outline-offset: -3px;
+    }
+
     .kpi:last-child { border-right: 0; }
 
     .kpi span {
@@ -526,6 +548,34 @@
       margin-top: 5px;
       border-radius: 50%;
       background: var(--green);
+    }
+
+    .source-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .source-links a,
+    .source-card a {
+      display: inline-flex;
+      min-height: 30px;
+      align-items: center;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--blue);
+      background: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .source-links a:hover,
+    .source-card a:hover {
+      border-color: var(--blue);
+      background: #f3f7ff;
     }
 
     .field {
@@ -1168,6 +1218,101 @@
       box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
     }
 
+    .source-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 55;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(5, 10, 7, 0.58);
+    }
+
+    .source-dialog {
+      width: min(900px, 100%);
+      max-height: min(760px, calc(100vh - 36px));
+      overflow: auto;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+    }
+
+    .source-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .source-head span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .source-head h2 {
+      margin: 5px 0 0;
+      font-size: 24px;
+    }
+
+    .source-close {
+      min-height: 36px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--ink);
+      background: #ffffff;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .source-intro {
+      margin: 0;
+      padding: 14px 16px 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .public-source-links {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .source-card {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+    }
+
+    .source-card h3 {
+      margin: 0 0 7px;
+      font-size: 15px;
+    }
+
+    .source-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 760px) {
+      .public-source-links {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .command-head {
       padding: 14px;
       border-bottom: 1px solid var(--line);
@@ -1360,6 +1505,7 @@
     }
 
     .kpi-meter {
+      display: block;
       height: 4px;
       margin-top: 12px;
       overflow: hidden;
@@ -2592,6 +2738,43 @@
       box-shadow: 0 24px 70px rgba(0, 0, 0, 0.54);
     }
 
+    .source-overlay {
+      z-index: 5100;
+      background: rgba(0, 0, 0, 0.56);
+      backdrop-filter: blur(4px);
+    }
+
+    .source-dialog {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      color: #f4f4f4;
+      background: #090b10;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.54);
+    }
+
+    .source-head {
+      border-bottom-color: rgba(255, 255, 255, 0.10);
+      background: #111318;
+    }
+
+    .source-head h2,
+    .source-card h3 {
+      color: #f4f4f4;
+    }
+
+    .source-card {
+      border-color: rgba(255, 255, 255, 0.12);
+      background: #111318;
+    }
+
+    .source-close,
+    .source-links a,
+    .source-card a {
+      color: #f4f4f4;
+      background: #1b1f27;
+      border-color: #303642;
+    }
+
     .command-head {
       border-bottom-color: rgba(255, 255, 255, 0.10);
       background: #111318;
@@ -2972,6 +3155,20 @@
     </div>
   </div>
 
+  <div class="source-overlay" id="sourceOverlay" hidden>
+    <div class="source-dialog" role="dialog" aria-modal="true" aria-labelledby="sourceTitle">
+      <div class="source-head">
+        <div>
+          <span>Wayne proof slice</span>
+          <h2 id="sourceTitle">Public source links</h2>
+        </div>
+        <button class="source-close" id="sourceClose" type="button">Close</button>
+      </div>
+      <p class="source-intro">These links point to the upstream public data pages behind the Wayne County proof slice. DTE asset, outage, inspection, and work-order data are still required before production dispatch.</p>
+      <div class="public-source-links" id="publicSourceLinks"></div>
+    </div>
+  </div>
+
   <script>
     (function () {
       var MAP_BOUNDS = { minLon: -90.45, maxLon: -82.05, minLat: 41.65, maxLat: 48.35 };
@@ -3087,42 +3284,67 @@
             name: "NOAA storm history",
             value: "75 Wayne County storm records from 2023 through Jan 2026",
             detail: "Includes thunderstorm wind, hail, tornado, flash flood, flood, ice/snow, winter weather, and high-wind records from NCEI Storm Events bulk CSV.",
-            source: "NCEI Storm Events"
+            source: "NCEI Storm Events",
+            links: [
+              { label: "NOAA Storm Events", url: "https://www.ncei.noaa.gov/stormevents/" },
+              { label: "Bulk CSV files", url: "https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/" }
+            ]
           },
           {
             key: "fema",
             name: "FEMA flood risk",
             value: "4,397 NFHL flood-hazard zone features intersect the Wayne bbox",
             detail: "Queried FEMA NFHL MapServer layer 28, Flood Hazard Zones, over the Detroit/Wayne working envelope.",
-            source: "FEMA NFHL"
+            source: "FEMA NFHL",
+            links: [
+              { label: "NFHL overview", url: "https://www.fema.gov/flood-maps/national-flood-hazard-layer" },
+              { label: "Flood Hazard Zones API", url: "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28" }
+            ]
           },
           {
             key: "ssurgo",
             name: "USDA soil/drainage",
             value: "SSURGO area MI163, Wayne County, Michigan",
             detail: "Drainage table includes 313 somewhat poorly drained, 83 poorly drained, 54 hydric poorly drained, and 21 hydric very poorly drained components.",
-            source: "USDA NRCS Soil Data Access"
+            source: "USDA NRCS Soil Data Access",
+            links: [
+              { label: "Soil Data Access", url: "https://sdmdataaccess.nrcs.usda.gov/Default.aspx" },
+              { label: "Web Soil Survey", url: "https://websoilsurvey.sc.egov.usda.gov/App/WebSoilSurvey.aspx" }
+            ]
           },
           {
             key: "usgs",
             name: "USGS elevation/slope",
             value: "3DEP 1/3 arc-second GeoTIFF tiles n43w083 and n43w084",
             detail: "The National Map query returned two public 3DEP elevation tiles covering the Wayne proof envelope.",
-            source: "USGS 3DEP"
+            source: "USGS 3DEP",
+            links: [
+              { label: "USGS 3DEP", url: "https://www.usgs.gov/3d-elevation-program" },
+              { label: "National Map Downloader", url: "https://apps.nationalmap.gov/downloader/" }
+            ]
           },
           {
             key: "imagery",
             name: "Vegetation imagery",
             value: "Landsat/NAIP/Sentinel public imagery source stack",
             detail: "The demo uses a canopy/ROW proxy tied to public imagery sources; production would compute parcel-level NDVI/canopy distance directly.",
-            source: "USGS Landsat, USDA NAIP, Copernicus Sentinel"
+            source: "USGS Landsat, USDA NAIP, Copernicus Sentinel",
+            links: [
+              { label: "USGS EarthExplorer", url: "https://earthexplorer.usgs.gov/" },
+              { label: "USDA NAIP catalog", url: "https://catalog.data.gov/dataset/national-agriculture-imagery-program-naip-imagery" },
+              { label: "Copernicus Sentinel access", url: "https://sentinels.copernicus.eu/copernicus-data/access" }
+            ]
           },
           {
             key: "osm",
             name: "OSM/open infrastructure",
             value: "49,058 OSM power pole/tower/line features in the Wayne bbox",
             detail: "Overpass count returned 46,530 nodes and 2,528 ways; used as open infrastructure context, not DTE asset truth.",
-            source: "OpenStreetMap / Overpass"
+            source: "OpenStreetMap / Overpass",
+            links: [
+              { label: "OSM power=pole tag", url: "https://wiki.openstreetmap.org/wiki/Tag:power%3Dpole" },
+              { label: "Overpass Turbo", url: "https://overpass-turbo.eu/" }
+            ]
           }
         ]
       };
@@ -3259,6 +3481,9 @@
         commandOverlay: document.getElementById("commandOverlay"),
         commandSearch: document.getElementById("commandSearch"),
         commandList: document.getElementById("commandList"),
+        sourceOverlay: document.getElementById("sourceOverlay"),
+        sourceClose: document.getElementById("sourceClose"),
+        publicSourceLinks: document.getElementById("publicSourceLinks"),
         screenKicker: document.getElementById("screenKicker"),
         screenTitle: document.getElementById("screenTitle"),
         screenBlurb: document.getElementById("screenBlurb"),
@@ -3876,7 +4101,7 @@
         var lift = baseline ? capture / baseline : 0;
         var kpis = state.demoMode ? [
           ["Wayne proof slice", rows.length.toLocaleString("en-US") + " receipts", "real public-data evidence attached to the demo county", clamp(rows.length / 48, 0.08, 1)],
-          ["Public layers attached", WAYNE_PUBLIC_PROOF.layers.length + " sources", "NOAA, FEMA, USDA, USGS, imagery, and OSM", 1],
+          ["Public layers attached", WAYNE_PUBLIC_PROOF.layers.length + " sources", "NOAA, FEMA, USDA, USGS, imagery, and OSM. Click for links.", 1, "sources"],
           ["Audit-ready packets", pct(auditReady), "source-complete, high-confidence Wayne receipts", auditReady],
           ["Estimated benefit", money(dollars), Math.round(avoided).toLocaleString("en-US") + " avoided outage minutes in this cycle", clamp(dollars / 120000, 0.08, 1)],
           ["Storm-ready crew list", packets.length.toLocaleString("en-US") + " packets", "ranked Wayne packets before the wind scenario", clamp(packets.length / 60, 0.08, 1)]
@@ -3888,8 +4113,10 @@
           ["Crew packets", packets.length.toLocaleString("en-US"), "ranked packets ready for dispatch review", clamp(packets.length / 340, 0.08, 1)]
         ];
         els.kpis.innerHTML = kpis.map(function (k) {
-          return '<div class="kpi"><span>' + esc(k[0]) + '</span><strong>' + esc(k[1]) +
-            '</strong><em>' + esc(k[2]) + '</em><div class="kpi-meter"><i style="width:' + pct(clamp(k[3], 0, 1)) + '"></i></div></div>';
+          var tag = k[4] ? "button" : "div";
+          var attrs = k[4] ? ' type="button" data-command="' + esc(k[4]) + '" aria-label="' + esc(k[0] + ", " + k[1] + ". Open public source links.") + '"' : "";
+          return '<' + tag + ' class="kpi"' + attrs + '><span>' + esc(k[0]) + '</span><strong>' + esc(k[1]) +
+            '</strong><em>' + esc(k[2]) + '</em><span class="kpi-meter"><i style="width:' + pct(clamp(k[3], 0, 1)) + '"></i></span></' + tag + '>';
         }).join("");
       }
 
@@ -4166,6 +4393,43 @@
         ];
       }
 
+      function layerLinks(layer) {
+        return layer.links || (layer.url ? [{ label: layer.source || "Open source", url: layer.url }] : []);
+      }
+
+      function renderLayerLinks(layer) {
+        var links = layerLinks(layer);
+        if (!links.length) return "";
+        return '<div class="source-links">' + links.map(function (link) {
+          return '<a href="' + esc(link.url) + '" target="_blank" rel="noopener">' + esc(link.label) + '</a>';
+        }).join("") + '</div>';
+      }
+
+      function renderSourceListItem(layer) {
+        return '<li><i></i><span><strong>' + esc(layer.name) + ':</strong> ' + esc(layer.value) +
+          '<br>' + esc(layer.detail) + '<br>Source: ' + esc(layer.source) + renderLayerLinks(layer) + '</span></li>';
+      }
+
+      function renderSourcePanel() {
+        els.publicSourceLinks.innerHTML = WAYNE_PUBLIC_PROOF.layers.map(function (layer) {
+          return '<article class="source-card">' +
+            '<h3>' + esc(layer.name) + '</h3>' +
+            '<p>' + esc(layer.value) + '<br>' + esc(layer.detail) + '</p>' +
+            renderLayerLinks(layer) +
+          '</article>';
+        }).join("");
+      }
+
+      function openSourcePanel() {
+        renderSourcePanel();
+        els.sourceOverlay.hidden = false;
+        setTimeout(function () { els.sourceClose.focus(); }, 0);
+      }
+
+      function closeSourcePanel() {
+        els.sourceOverlay.hidden = true;
+      }
+
       function guardrailPenalty(p) {
         return state.confidenceGuard && p.confidence < 0.67 && p.risk < 0.74 && p.report !== "verified" ? 0.15 : 0;
       }
@@ -4178,7 +4442,8 @@
         var proof = dataProofBadge(p);
         var layers = sourceManifestFor(p).map(function (layer) {
           return '<div class="proof-item"><strong>' + esc(layer.name) + '</strong><span>' +
-            esc(layer.value) + '<br>' + esc(layer.detail) + '<br>Source: ' + esc(layer.source) + '</span></div>';
+            esc(layer.value) + '<br>' + esc(layer.detail) + '<br>Source: ' + esc(layer.source) +
+            renderLayerLinks(layer) + '</span></div>';
         }).join("");
         var note = p.publicProofCounty ? WAYNE_PUBLIC_PROOF.disclosure :
           "This receipt is useful for judging workflow and explainability, but it is not claiming actual DTE asset condition.";
@@ -4269,6 +4534,7 @@
         return [
           { id: "demo", label: "Run 90-sec judge demo", group: "Demo", run: function () { runJudgeDemo(false); } },
           { id: "demoReceipt", label: "Demo: open top Wayne receipt", group: "Demo", run: function () { runJudgeDemo(true); } },
+          { id: "sources", label: "Open public source links", group: "Evidence", run: openSourcePanel },
           { id: "work", label: "Go to Field", group: "Screen", run: function () { setScreen("work"); } },
           { id: "receipt", label: "Go to Receipt", group: "Screen", run: function () { setScreen("receipt"); } },
           { id: "google", label: "Open pole estimate in Google Maps", group: "Location", run: function () { if (selected) openExternal(googleMapsUrl(selected)); } },
@@ -4657,9 +4923,7 @@
           "Receipt hash locks the visible evidence, top drivers, action, and score used for this work cycle.",
           "Post-work follow-up compares before/after condition and expected risk reduction for accountability."
         ];
-        var manifest = sourceManifestFor(p).map(function (layer) {
-          return layer.name + ": " + layer.value;
-        }).concat(["Moderated resident and crew reports kept outside model training."]);
+        var manifest = sourceManifestFor(p);
         var proof = dataProofBadge(p);
         els.receiptStatus.textContent = p.tier + " / " + p.action + " / " + p.hash;
         els.receiptShell.innerHTML =
@@ -4713,9 +4977,8 @@
               return '<li>' + esc(a) + '</li>';
               }).join("") + '</ul>' +
               '<h2>Guardrails and source manifest</h2>' +
-              '<ul class="source-list">' + manifest.map(function (item) {
-                return '<li><i></i><span>' + esc(item) + '</span></li>';
-              }).join("") + '</ul>' +
+              '<ul class="source-list">' + manifest.map(renderSourceListItem).join("") +
+                '<li><i></i><span>Moderated resident and crew reports kept outside model training.</span></li></ul>' +
               '<div class="street-context-note"><strong>Validation-ready label:</strong> Synthetic-demo estimates are clearly disclosed here and ready to be checked against DTE inspection, outage, and work-order outcomes.</div>' +
             '</div>' +
           '</div>' +
@@ -4812,12 +5075,18 @@
           openCommandPalette();
         } else if (e.key === "Escape" && commandState.open) {
           closeCommandPalette();
+        } else if (e.key === "Escape" && !els.sourceOverlay.hidden) {
+          closeSourcePanel();
         }
       });
 
       if (els.commandOpen) els.commandOpen.addEventListener("click", openCommandPalette);
       els.commandOverlay.addEventListener("click", function (e) {
         if (e.target === els.commandOverlay) closeCommandPalette();
+      });
+      els.sourceClose.addEventListener("click", closeSourcePanel);
+      els.sourceOverlay.addEventListener("click", function (e) {
+        if (e.target === els.sourceOverlay) closeSourcePanel();
       });
       els.commandSearch.addEventListener("input", function () {
         commandState.activeIndex = 0;
